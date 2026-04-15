@@ -14,7 +14,12 @@ const post = {
   content: 'This detail body is fetched through the typed post detail query.',
   coverImage: null,
   published: true,
-  authorId: userId,
+  author: {
+    id: userId,
+    name: 'API User',
+    username: 'api-user',
+    image: null,
+  },
   createdAt: '2026-04-15T09:30:00.000Z',
   updatedAt: null,
 }

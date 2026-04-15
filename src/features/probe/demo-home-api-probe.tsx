@@ -84,7 +84,7 @@ import { Skeleton } from '#/components/ui/skeleton'
 import { Spinner } from '#/components/ui/spinner'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '#/components/ui/tabs'
 
-export function DemoHomeApiProbe({ auth }: { auth: unknown }) {
+export function HomeApiProbe({ auth }: { auth: unknown }) {
   const isAuthenticated = Boolean(auth)
   const trackedPostsRef = useRef<Set<string>>(new Set())
   const [selectedPostIdState, setSelectedPostIdState] = useState<string>('')
@@ -472,8 +472,12 @@ export function DemoHomeApiProbe({ auth }: { auth: unknown }) {
                             />
                             <ProbeLine
                               label="Author"
-                              value={truncateId(selectedPost.authorId)}
-                              description="UUID validated client-side."
+                              value={selectedPost.author.name}
+                              description={
+                                selectedPost.author.username
+                                  ? `@${selectedPost.author.username}`
+                                  : truncateId(selectedPost.author.id)
+                              }
                             />
                           </div>
                           <Separator />

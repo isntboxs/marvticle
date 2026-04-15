@@ -1,5 +1,12 @@
 import { z } from 'zod'
 
+export const postAuthorSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  username: z.string().nullable(),
+  image: z.string().nullable(),
+})
+
 export const postSchema = z.object({
   id: z.string().uuid(),
   title: z.string(),
@@ -7,7 +14,7 @@ export const postSchema = z.object({
   content: z.string(),
   coverImage: z.string().nullable(),
   published: z.boolean(),
-  authorId: z.string().uuid(),
+  author: postAuthorSchema,
   createdAt: z.string(),
   updatedAt: z.string().nullable(),
 })
