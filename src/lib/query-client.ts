@@ -4,6 +4,9 @@ const createQueryClient = () =>
   new QueryClient({
     defaultOptions: {
       queries: {
+        retry: 1,
+        refetchOnWindowFocus: false,
+        staleTime: 30_000,
         gcTime: 24 * 60 * 60 * 1000, // 24 hours
       },
     },
