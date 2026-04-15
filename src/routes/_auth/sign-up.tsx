@@ -135,6 +135,7 @@ function RouteComponent() {
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.value)}
                     aria-invalid={isInvalid}
+                    aria-label="Full name"
                     placeholder="Full name"
                     autoComplete="name"
                     type="text"
@@ -166,6 +167,7 @@ function RouteComponent() {
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.value)}
                     aria-invalid={isInvalid}
+                    aria-label="Username"
                     placeholder="Username"
                     autoComplete="username"
                     type="text"
@@ -197,6 +199,7 @@ function RouteComponent() {
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.value)}
                     aria-invalid={isInvalid}
+                    aria-label="Email"
                     placeholder="Email"
                     autoComplete="email"
                     type="email"
@@ -228,6 +231,7 @@ function RouteComponent() {
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.value)}
                     aria-invalid={isInvalid}
+                    aria-label="Password"
                     placeholder="Password"
                     autoComplete="new-password"
                     type={showPassword ? 'text' : 'password'}
@@ -235,11 +239,15 @@ function RouteComponent() {
 
                   <InputGroupAddon align="inline-end">
                     <InputGroupButton
+                      aria-label={
+                        showPassword ? 'Hide password' : 'Show password'
+                      }
+                      aria-pressed={showPassword}
                       type="button"
                       size="icon-xs"
                       onClick={toggleShowPassword}
                     >
-                      {showPassword ? <EyeIcon /> : <EyeOffIcon />}
+                      {showPassword ? <EyeOffIcon /> : <EyeIcon />}
                     </InputGroupButton>
                   </InputGroupAddon>
                 </InputGroup>
@@ -269,6 +277,7 @@ function RouteComponent() {
                     onBlur={field.handleBlur}
                     onChange={(e) => field.handleChange(e.target.value)}
                     aria-invalid={isInvalid}
+                    aria-label="Confirm Password"
                     placeholder="Confirm Password"
                     autoComplete="new-password"
                     type={showConfirmPassword ? 'text' : 'password'}
@@ -276,11 +285,15 @@ function RouteComponent() {
 
                   <InputGroupAddon align="inline-end">
                     <InputGroupButton
+                      aria-label={
+                        showConfirmPassword ? 'Hide password' : 'Show password'
+                      }
+                      aria-pressed={showConfirmPassword}
                       type="button"
                       size="icon-xs"
                       onClick={toggleShowConfirmPassword}
                     >
-                      {showConfirmPassword ? <EyeIcon /> : <EyeOffIcon />}
+                      {showConfirmPassword ? <EyeOffIcon /> : <EyeIcon />}
                     </InputGroupButton>
                   </InputGroupAddon>
                 </InputGroup>

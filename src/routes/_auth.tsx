@@ -23,10 +23,10 @@ export const Route = createFileRoute('/_auth')({
       throw redirect({ to: '/', viewTransition: true })
     }
   },
-  component: RouteCompoment,
+  component: RouteComponent,
 })
 
-function RouteCompoment() {
+function RouteComponent() {
   const pathname = useLocation({ select: (state) => state.pathname })
 
   const title = pathname === '/sign-in' ? 'Sign In' : 'Sign Up'
