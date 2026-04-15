@@ -6,6 +6,7 @@ import {
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { ReactQueryDevtoolsPanel } from '@tanstack/react-query-devtools'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
+import { formDevtoolsPlugin } from '@tanstack/react-form-devtools'
 
 import type { QueryClient } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
@@ -15,6 +16,7 @@ import { TanstackQueryProvider } from '#/components/providers/tanstack-query-pro
 import { ThemeProvider } from '#/components/providers/theme-provider'
 import { TooltipProvider } from '#/components/ui/tooltip'
 import { Toaster } from '#/components/ui/sonner'
+import { getAuthFn } from '#/functions/get-auth-fn'
 
 interface MyRouterContext {
   queryClient: QueryClient
@@ -41,6 +43,12 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       },
     ],
   }),
+
+  beforeLoad: async () => {
+    const auth = await getAuthFn()
+
+    return { auth }
+  },
   shellComponent: RootDocument,
 })
 
@@ -69,6 +77,7 @@ function RootDocument({ children }: { children: ReactNode }) {
                 name: 'React Query',
                 render: <ReactQueryDevtoolsPanel />,
               },
+              formDevtoolsPlugin(),
             ]}
           />
         </TanstackQueryProvider>
