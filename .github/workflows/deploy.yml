@@ -2,7 +2,7 @@ name: Build Docker images
 
 on:
   push:
-    branches: ['development']
+    branches: ['main']
 
 permissions:
   contents: read
