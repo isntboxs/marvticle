@@ -1,14 +1,11 @@
 import { createMiddleware } from '@tanstack/react-start'
 
-import { authClient } from '#/lib/auth-client'
+import { auth } from '#/lib/auth/server'
 
 export const authMiddleware = createMiddleware().server(
   async ({ request, next }) => {
-    const session = await authClient.getSession({
-      fetchOptions: {
-        headers: request.headers,
-        throw: true,
-      },
+    const session = await auth.api.getSession({
+      headers: request.headers,
     })
 
     return next({

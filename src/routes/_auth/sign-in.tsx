@@ -15,7 +15,7 @@ import {
 } from '#/components/ui/input-group'
 import { Button } from '#/components/ui/button'
 import { Spinner } from '#/components/ui/spinner'
-import { authClient } from '#/lib/auth-client'
+import { authClient } from '#/lib/auth/client'
 
 export const Route = createFileRoute('/_auth/sign-in')({
   component: RouteComponent,

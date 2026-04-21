@@ -129,3 +129,66 @@
     @apply font-mono;
   }
 }
+
+@keyframes api-probe-drift {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, 18px, 0);
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@layer components {
+  .api-probe-shell {
+    position: relative;
+    overflow: hidden;
+    background:
+      linear-gradient(
+        180deg,
+        color-mix(in oklab, var(--background) 92%, var(--foreground) 8%) 0%,
+        var(--background) 32%,
+        color-mix(in oklab, var(--background) 94%, var(--foreground) 6%) 100%
+      );
+  }
+
+  .api-probe-shell::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+      linear-gradient(to right, color-mix(in oklab, var(--border) 80%, transparent) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in oklab, var(--border) 80%, transparent) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: linear-gradient(180deg, black, transparent 88%);
+    opacity: 0.45;
+  }
+
+  .api-probe-grid {
+    position: relative;
+    z-index: 1;
+  }
+
+  .api-probe-grid::before {
+    content: '';
+    position: absolute;
+    top: -12rem;
+    right: -8rem;
+    width: 28rem;
+    height: 28rem;
+    border-radius: 9999px;
+    background: radial-gradient(
+      circle,
+      color-mix(in oklab, var(--foreground) 10%, transparent) 0%,
+      transparent 72%
+    );
+    filter: blur(20px);
+    opacity: 0.9;
+    animation: api-probe-drift 16s ease-in-out infinite;
+    pointer-events: none;
+  }
+}
