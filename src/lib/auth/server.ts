@@ -11,7 +11,6 @@ import {
 import * as schema from '#/db/schemas'
 import { db } from '#/db'
 import { env } from '#/lib/env/server'
-import { env as envClient } from '#/lib/env/client'
 
 export const auth = betterAuth({
   account: {
@@ -53,5 +52,5 @@ export const auth = betterAuth({
   session: {
     expiresIn: 60 * 60 * 24 * 3,
   },
-  trustedOrigins: [env.BETTER_AUTH_URL, envClient.VITE_APP_URL],
+  trustedOrigins: [env.BETTER_AUTH_URL],
 })
