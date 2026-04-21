@@ -1,13 +1,15 @@
 node_modules
+.git
 .DS_Store
 dist
 dist-ssr
 *.local
 .env
+.env.*
+!.env.example
 .nitro
 .tanstack
 .wrangler
 .output
 .vinxi
 __unconfig*
-todos.json

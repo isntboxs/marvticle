@@ -20,8 +20,7 @@ FROM base AS prerelease
 COPY --from=install /temp/dev/node_modules node_modules
 COPY . .
 
-# build (override default port 3000)
-ENV NITRO_PORT=3001
+# build
 RUN bun run build
 
 # ---------- RUNTIME ----------
@@ -32,6 +31,7 @@ COPY --from=prerelease /usr/src/app/.output ./.output
 COPY --from=prerelease /usr/src/app/package.json .
 
 # run the app
+ENV NITRO_PORT=3001
 USER bun
 EXPOSE 3001/tcp
 ENTRYPOINT [ "bun", "run", ".output/server/index.mjs" ]

@@ -7,6 +7,8 @@ import * as schema from '#/db/schemas'
 function createDb() {
   const pool = new Pool({
     connectionString: env.DATABASE_URL,
+    connectionTimeoutMillis: 5_000,
+    idleTimeoutMillis: 30_000,
   })
 
   return drizzle({ client: pool, schema })
