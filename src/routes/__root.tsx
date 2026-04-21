@@ -12,7 +12,6 @@ import type { QueryClient } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 
 import appCss from '#/styles.css?url'
-import { TanstackQueryProvider } from '#/components/providers/tanstack-query-provider'
 import { ThemeProvider } from '#/components/providers/theme-provider'
 import { TooltipProvider } from '#/components/ui/tooltip'
 import { Toaster } from '#/components/ui/sonner'
@@ -59,28 +58,26 @@ function RootDocument({ children }: { children: ReactNode }) {
         <HeadContent />
       </head>
       <body>
-        <TanstackQueryProvider>
-          <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
-            <TooltipProvider>{children}</TooltipProvider>
-            <Toaster position="top-right" />
-          </ThemeProvider>
-          <TanStackDevtools
-            config={{
-              position: 'bottom-right',
-            }}
-            plugins={[
-              {
-                name: 'Tanstack Router',
-                render: <TanStackRouterDevtoolsPanel />,
-              },
-              {
-                name: 'React Query',
-                render: <ReactQueryDevtoolsPanel />,
-              },
-              formDevtoolsPlugin(),
-            ]}
-          />
-        </TanstackQueryProvider>
+        <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
+          <TooltipProvider>{children}</TooltipProvider>
+          <Toaster position="top-right" />
+        </ThemeProvider>
+        <TanStackDevtools
+          config={{
+            position: 'bottom-right',
+          }}
+          plugins={[
+            {
+              name: 'Tanstack Router',
+              render: <TanStackRouterDevtoolsPanel />,
+            },
+            {
+              name: 'React Query',
+              render: <ReactQueryDevtoolsPanel />,
+            },
+            formDevtoolsPlugin(),
+          ]}
+        />
         <Scripts />
       </body>
     </html>
