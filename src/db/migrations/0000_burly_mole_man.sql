@@ -63,11 +63,11 @@ CREATE TABLE "posts" (
 	"cover_image_url" text,
 	"content" text NOT NULL,
 	"status" "post_status" DEFAULT 'DRAFT' NOT NULL,
-	"viewsCount" integer DEFAULT 0 NOT NULL,
-	"likesCount" integer DEFAULT 0 NOT NULL,
-	"commentsCount" integer DEFAULT 0 NOT NULL,
+	"views_count" integer DEFAULT 0 NOT NULL,
+	"likes_count" integer DEFAULT 0 NOT NULL,
+	"comments_count" integer DEFAULT 0 NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
-	"updated_at" timestamp,
+	"updated_at" timestamp DEFAULT now() NOT NULL,
 	CONSTRAINT "posts_slug_unique" UNIQUE("slug")
 );
 --> statement-breakpoint
@@ -77,6 +77,5 @@ ALTER TABLE "posts" ADD CONSTRAINT "posts_author_id_user_id_fk" FOREIGN KEY ("au
 CREATE INDEX "account_userId_idx" ON "account" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "session_userId_idx" ON "session" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "verification_identifier_idx" ON "verification" USING btree ("identifier");--> statement-breakpoint
-CREATE INDEX "posts_slug_idx" ON "posts" USING btree ("slug");--> statement-breakpoint
 CREATE INDEX "posts_author_id_idx" ON "posts" USING btree ("author_id");--> statement-breakpoint
 CREATE INDEX "posts_status_idx" ON "posts" USING btree ("status");

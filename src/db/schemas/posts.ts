@@ -30,14 +30,13 @@ export const postsTable = pgTable(
     coverImageUrl: text('cover_image_url'),
     content: text('content').notNull(),
     status: postStatusEnum('status').default('DRAFT').notNull(),
-    viewsCount: integer().notNull().default(0),
-    likesCount: integer().notNull().default(0),
-    commentsCount: integer().notNull().default(0),
+    viewsCount: integer('views_count').notNull().default(0),
+    likesCount: integer('likes_count').notNull().default(0),
+    commentsCount: integer('comments_count').notNull().default(0),
     createdAt: timestamp('created_at').defaultNow().notNull(),
-    updatedAt: timestamp('updated_at'),
+    updatedAt: timestamp('updated_at').defaultNow().$onUpdate(() => new Date()).notNull(),
   },
   (table) => [
-    index('posts_slug_idx').on(table.slug),
     index('posts_author_id_idx').on(table.authorId),
     index('posts_status_idx').on(table.status),
   ]

@@ -463,21 +463,21 @@
           "default": "'DRAFT'"
         },
         "viewsCount": {
-          "name": "viewsCount",
+          "name": "views_count",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "default": 0
         },
         "likesCount": {
-          "name": "likesCount",
+          "name": "likes_count",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "default": 0
         },
         "commentsCount": {
-          "name": "commentsCount",
+          "name": "comments_count",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
@@ -494,25 +494,11 @@
           "name": "updated_at",
           "type": "timestamp",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true,
+          "default": "now()"
         }
       },
       "indexes": {
-        "posts_slug_idx": {
-          "name": "posts_slug_idx",
-          "columns": [
-            {
-              "expression": "slug",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
         "posts_author_id_idx": {
           "name": "posts_author_id_idx",
           "columns": [
