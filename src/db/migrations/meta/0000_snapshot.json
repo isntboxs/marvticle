@@ -1,5 +1,5 @@
 {
-  "id": "77ee8dd6-fae1-413f-8cfb-eff05ce30f5d",
+  "id": "f8129e02-4b7d-4aba-90b1-055dd173e25c",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -462,22 +462,22 @@
           "notNull": true,
           "default": "'DRAFT'"
         },
-        "viewsCount": {
-          "name": "viewsCount",
+        "views_count": {
+          "name": "views_count",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "default": 0
         },
-        "likesCount": {
-          "name": "likesCount",
+        "likes_count": {
+          "name": "likes_count",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "default": 0
         },
-        "commentsCount": {
-          "name": "commentsCount",
+        "comments_count": {
+          "name": "comments_count",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
@@ -494,7 +494,8 @@
           "name": "updated_at",
           "type": "timestamp",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true,
+          "default": "now()"
         }
       },
       "indexes": {
@@ -508,7 +509,7 @@
               "nulls": "last"
             }
           ],
-          "isUnique": false,
+          "isUnique": true,
           "concurrently": false,
           "method": "btree",
           "with": {}
