@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm'
 import {
+  check,
   index,
   integer,
   pgEnum,
@@ -41,6 +42,12 @@ export const postsTable = pgTable(
       .$onUpdate(() => new Date()),
   },
   (table) => [
+    check('posts_views_count_non_negative', sql`${table.viewsCount} >= 0`),
+    check('posts_likes_count_non_negative', sql`${table.likesCount} >= 0`),
+    check(
+      'posts_comments_count_non_negative',
+      sql`${table.commentsCount} >= 0`
+    ),
     uniqueIndex('posts_slug_idx').on(table.slug),
     index('posts_author_id_idx').on(table.authorId),
     index('posts_status_idx').on(table.status),
