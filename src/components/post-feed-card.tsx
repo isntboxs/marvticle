@@ -12,10 +12,19 @@ import { Button } from '#/components/ui/button'
 import { AspectRatio } from '#/components/ui/aspect-ratio'
 import { Card, CardContent, CardFooter, CardHeader } from '#/components/ui/card'
 import { UserAvatar } from '#/components/user-avatar'
+import { getPostReadTime } from '#/lib/posts'
 
 type Props = RouterOutputs['posts']['getMany']['items'][number]
 
 export const PostFeedCard = (post: Props) => {
+  const authorUsername = post.author.username ?? 'unknown'
+  const postDetailParams = post.author.username
+    ? {
+        username: post.author.username,
+        postSlug: post.slug,
+      }
+    : null
+
   return (
     <Card className="gap-4 py-0">
       {post.coverImageUrl && (
@@ -37,7 +46,7 @@ export const PostFeedCard = (post: Props) => {
           />
 
           <div className="flex h-full flex-1 flex-col justify-between">
-            <p className="text-sm font-medium">{post.author.username}</p>
+            <p className="text-sm font-medium">@{authorUsername}</p>
             <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <span>{formatDate(new Date(post.createdAt), 'MMM d')}</span>
               <span>
@@ -53,14 +62,22 @@ export const PostFeedCard = (post: Props) => {
       </CardHeader>
 
       <CardContent className="px-0 pr-4 pl-16">
-        <Link
-          to="."
-          className="transition-all ease-in-out hover:text-muted-foreground"
-        >
+        {postDetailParams ? (
+          <Link
+            to="/$username/$postSlug"
+            params={postDetailParams}
+            viewTransition
+            className="transition-all ease-in-out hover:text-muted-foreground"
+          >
+            <span className="line-clamp-2 text-2xl leading-relaxed font-bold">
+              {post.title}
+            </span>
+          </Link>
+        ) : (
           <span className="line-clamp-2 text-2xl leading-relaxed font-bold">
             {post.title}
           </span>
-        </Link>
+        )}
       </CardContent>
 
       <CardFooter className="border-t-0 px-0 pr-4 pl-14">
@@ -83,7 +100,7 @@ export const PostFeedCard = (post: Props) => {
           </div>
 
           <div className="flex items-center gap-2">
-            <span>{getReadTime(post.content)} min read</span>
+            <span>{getPostReadTime(post.content)} min read</span>
 
             <Button variant="ghost" size="icon">
               <BookmarkIcon className="size-4" />
@@ -93,11 +110,4 @@ export const PostFeedCard = (post: Props) => {
       </CardFooter>
     </Card>
   )
-}
-
-const getReadTime = (content: string) => {
-  const wordsPerMinute = 200
-  const words = content.split(' ').length
-  const minutes = Math.ceil(words / wordsPerMinute)
-  return minutes
 }

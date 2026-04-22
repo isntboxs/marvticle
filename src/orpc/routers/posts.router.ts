@@ -120,28 +120,33 @@ const getManyPostsHandler = orpcBase.posts.getMany.handler(
   }
 )
 
-const getOnePostSlugHandler = orpcBase.posts.getOnePostSlug.handler(
-  async ({ context, input, errors }) => {
-    const postQuery = context.db
-      .select(publishedPostSelect)
-      .from(postsTable)
-      .where(
-        and(eq(postsTable.slug, input.slug), eq(postsTable.status, 'PUBLISHED'))
-      )
-      .innerJoin(userTable, eq(postsTable.authorId, userTable.id))
-      .limit(1)
+const getOneByUsernameAndSlugHandler =
+  orpcBase.posts.getOneByUsernameAndSlug.handler(
+    async ({ context, input, errors }) => {
+      const postQuery = context.db
+        .select(publishedPostSelect)
+        .from(postsTable)
+        .innerJoin(userTable, eq(postsTable.authorId, userTable.id))
+        .where(
+          and(
+            eq(userTable.username, input.username),
+            eq(postsTable.slug, input.slug),
+            eq(postsTable.status, 'PUBLISHED')
+          )
+        )
+        .limit(1)
 
-    const [post] = await postQuery
+      const [post] = await postQuery
 
-    if (!post) {
-      throw errors.NOT_FOUND({
-        message: `Post with slug ${input.slug} not found.`,
-      })
+      if (!post) {
+        throw errors.NOT_FOUND({
+          message: `Post @${input.username}/${input.slug} not found.`,
+        })
+      }
+
+      return post
     }
-
-    return post
-  }
-)
+  )
 
 const createPostHandler = orpcBase
   .use(orpcRequireAuthMiddleware)
@@ -168,6 +173,6 @@ const createPostHandler = orpcBase
 
 export const postsRouter = {
   getMany: getManyPostsHandler,
-  getOnePostSlug: getOnePostSlugHandler,
+  getOneByUsernameAndSlug: getOneByUsernameAndSlugHandler,
   create: createPostHandler,
 }

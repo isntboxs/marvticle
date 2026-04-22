@@ -16,6 +16,7 @@ import { Route as AuthSignUpRouteImport } from './routes/_auth/sign-up'
 import { Route as AuthSignInRouteImport } from './routes/_auth/sign-in'
 import { Route as ApiOrpcSplatRouteImport } from './routes/api/orpc.$'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth.$'
+import { Route as AppUsernamePostSlugRouteImport } from './routes/_app/$username/$postSlug'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/_auth',
@@ -50,11 +51,17 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppUsernamePostSlugRoute = AppUsernamePostSlugRouteImport.update({
+  id: '/$username/$postSlug',
+  path: '/$username/$postSlug',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/sign-in': typeof AuthSignInRoute
   '/sign-up': typeof AuthSignUpRoute
+  '/$username/$postSlug': typeof AppUsernamePostSlugRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/orpc/$': typeof ApiOrpcSplatRoute
 }
@@ -62,6 +69,7 @@ export interface FileRoutesByTo {
   '/': typeof AppIndexRoute
   '/sign-in': typeof AuthSignInRoute
   '/sign-up': typeof AuthSignUpRoute
+  '/$username/$postSlug': typeof AppUsernamePostSlugRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/orpc/$': typeof ApiOrpcSplatRoute
 }
@@ -72,14 +80,27 @@ export interface FileRoutesById {
   '/_auth/sign-in': typeof AuthSignInRoute
   '/_auth/sign-up': typeof AuthSignUpRoute
   '/_app/': typeof AppIndexRoute
+  '/_app/$username/$postSlug': typeof AppUsernamePostSlugRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/orpc/$': typeof ApiOrpcSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/sign-in' | '/sign-up' | '/api/auth/$' | '/api/orpc/$'
+  fullPaths:
+    | '/'
+    | '/sign-in'
+    | '/sign-up'
+    | '/$username/$postSlug'
+    | '/api/auth/$'
+    | '/api/orpc/$'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/sign-in' | '/sign-up' | '/api/auth/$' | '/api/orpc/$'
+  to:
+    | '/'
+    | '/sign-in'
+    | '/sign-up'
+    | '/$username/$postSlug'
+    | '/api/auth/$'
+    | '/api/orpc/$'
   id:
     | '__root__'
     | '/_app'
@@ -87,6 +108,7 @@ export interface FileRouteTypes {
     | '/_auth/sign-in'
     | '/_auth/sign-up'
     | '/_app/'
+    | '/_app/$username/$postSlug'
     | '/api/auth/$'
     | '/api/orpc/$'
   fileRoutesById: FileRoutesById
@@ -149,15 +171,24 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_app/$username/$postSlug': {
+      id: '/_app/$username/$postSlug'
+      path: '/$username/$postSlug'
+      fullPath: '/$username/$postSlug'
+      preLoaderRoute: typeof AppUsernamePostSlugRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
 interface AppRouteChildren {
   AppIndexRoute: typeof AppIndexRoute
+  AppUsernamePostSlugRoute: typeof AppUsernamePostSlugRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppIndexRoute: AppIndexRoute,
+  AppUsernamePostSlugRoute: AppUsernamePostSlugRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)

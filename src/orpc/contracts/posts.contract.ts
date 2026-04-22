@@ -2,7 +2,7 @@ import { orpcBaseContract as base } from '#/orpc/contracts/base.contract'
 import {
   createPostBodySchema,
   getManyPostsParamsSchema,
-  getOnePostSlugParamsSchema,
+  getOnePostByUsernameAndSlugParamsSchema,
   postSchema,
   postsPageSchema,
 } from '#/schemas/posts.schema'
@@ -22,18 +22,19 @@ const getManyPostsContract = base
   .input(getManyPostsParamsSchema)
   .output(postsPageSchema)
 
-const getOnePostSlugContract = base
+const getOneByUsernameAndSlugContract = base
   .route({
-    path: '/posts/{slug}',
+    path: '/posts/{username}/{slug}',
     method: 'GET',
-    summary: 'Get post by slug',
-    description: 'Retrieve a single published post by its slug.',
+    summary: 'Get post by username and slug',
+    description:
+      'Retrieve a single published post by the author username and post slug.',
     tags: ['Posts'],
-    operationId: 'getOnePostSlug',
+    operationId: 'getOneByUsernameAndSlug',
     successStatus: 200,
     successDescription: 'Post retrieved successfully',
   })
-  .input(getOnePostSlugParamsSchema)
+  .input(getOnePostByUsernameAndSlugParamsSchema)
   .output(postSchema)
 
 const createPostContract = base
@@ -52,6 +53,6 @@ const createPostContract = base
 
 export const postsContract = {
   getMany: getManyPostsContract,
-  getOnePostSlug: getOnePostSlugContract,
+  getOneByUsernameAndSlug: getOneByUsernameAndSlugContract,
   create: createPostContract,
 }

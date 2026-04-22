@@ -51,6 +51,7 @@ export const postsPageSchema = z.object({
   nextCursor: z.string().nullable(),
 })
 
-export const getOnePostSlugParamsSchema = z.object({
+export const getOnePostByUsernameAndSlugParamsSchema = z.object({
+  username: z.string(),
   slug: z.string(),
 })
