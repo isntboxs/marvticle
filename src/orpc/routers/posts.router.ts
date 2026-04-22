@@ -1,8 +1,14 @@
 import { and, desc, eq, lt, or } from 'drizzle-orm'
+import { nanoid } from 'nanoid'
+import limax from 'limax'
 import { postsTable, userTable } from '#/db/schemas'
 import { orpcBase } from '#/orpc'
 import { orpcRequireAuthMiddleware } from '#/orpc/middlewares'
 import { postPaginationCursorSchema } from '#/schemas/posts.schema'
+
+const generateSlug = (title: string): string => {
+  return `${limax(title)}-${nanoid(5)}`
+}
 
 const publishedPostSelect = {
   id: postsTable.id,
@@ -140,10 +146,13 @@ const getOnePostSlugHandler = orpcBase.posts.getOnePostSlug.handler(
 const createPostHandler = orpcBase
   .use(orpcRequireAuthMiddleware)
   .posts.create.handler(async ({ context, input, errors }) => {
+    const slug = generateSlug(input.title)
+
     const [post] = await context.db
       .insert(postsTable)
       .values({
         ...input,
+        slug,
         authorId: context.auth.user.id,
       })
       .returning(createdPostSelect)

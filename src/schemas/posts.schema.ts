@@ -11,7 +11,15 @@ const selectPostSchema = createSelectSchema(postsTable, {
   commentsCount: (s) => s.int().nonnegative(),
 })
 
-const insertPostSchema = createInsertSchema(postsTable)
+const insertPostSchema = createInsertSchema(postsTable, {
+  title: (s) => s.trim().nonempty(),
+  content: (s) => s.trim().nonempty(),
+  coverImageUrl: z.url().optional(),
+  status: (s) =>
+    s
+      .default('DRAFT')
+      .refine((value) => ['DRAFT', 'PUBLISHED', 'ARCHIVED'].includes(value)),
+})
 
 export const postSchema = selectPostSchema
   .extend({
@@ -23,7 +31,6 @@ export const postSchema = selectPostSchema
 
 export const createPostBodySchema = insertPostSchema.pick({
   title: true,
-  slug: true,
   coverImageUrl: true,
   content: true,
   status: true,
