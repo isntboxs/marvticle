@@ -6,6 +6,7 @@ import {
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core'
 import { userTable } from './auth'
@@ -29,15 +30,18 @@ export const postsTable = pgTable(
     slug: text('slug').unique().notNull(),
     coverImageUrl: text('cover_image_url'),
     content: text('content').notNull(),
-    status: postStatusEnum('status').default('DRAFT').notNull(),
-    viewsCount: integer().notNull().default(0),
-    likesCount: integer().notNull().default(0),
-    commentsCount: integer().notNull().default(0),
-    createdAt: timestamp('created_at').defaultNow().notNull(),
-    updatedAt: timestamp('updated_at'),
+    status: postStatusEnum('status').notNull().default('DRAFT'),
+    viewsCount: integer('views_count').notNull().default(0),
+    likesCount: integer('likes_count').notNull().default(0),
+    commentsCount: integer('comments_count').notNull().default(0),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at')
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
   },
   (table) => [
-    index('posts_slug_idx').on(table.slug),
+    uniqueIndex('posts_slug_idx').on(table.slug),
     index('posts_author_id_idx').on(table.authorId),
     index('posts_status_idx').on(table.status),
   ]
