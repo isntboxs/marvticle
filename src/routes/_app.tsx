@@ -11,7 +11,7 @@ function RouteComponent() {
     <div className="flex min-h-svh w-full flex-col">
       <AppNavbar />
 
-      <main className="container mx-auto flex w-full max-w-3xl flex-col px-4 py-20">
+      <main className="container mx-auto flex w-full max-w-4xl flex-col py-20">
         <Outlet />
       </main>
     </div>
