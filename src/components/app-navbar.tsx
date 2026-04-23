@@ -60,8 +60,10 @@ export const AppNavbar = () => {
 
           {!!auth && (
             <>
-              <Button variant="default" size="lg">
-                Create post
+              <Button asChild variant="default" size="lg">
+                <Link to="/new" viewTransition>
+                  Create post
+                </Link>
               </Button>
 
               <UserMenu user={auth.user} onSignOut={handleSignOut} />

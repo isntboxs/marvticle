@@ -1,6 +1,6 @@
 # Marvticle — Project Tracker
 
-> Last updated: 2026-04-22
+> Last updated: 2026-04-23
 > Status: active build
 > Runtime stack: Bun + React 19 + TanStack Start + TanStack Router + TanStack Query + TanStack Form
 > App stack: Better Auth + Drizzle ORM + PostgreSQL + oRPC/OpenAPI + Tailwind CSS v4 + shadcn/ui
@@ -8,12 +8,12 @@
 ## Current Snapshot
 
 - Repo ini bukan lagi scaffold blank. Fondasi app, auth, database, RPC, dan home feed awal sudah ada.
-- Routing yang aktif saat ini: `/`, `/sign-in`, `/sign-up`, `/api/auth/$`, `/api/orpc/$`.
+- Routing yang aktif saat ini: `/`, `/new`, `/sign-in`, `/sign-up`, `/$username/$postSlug`, `/api/auth/$`, `/api/orpc/$`.
 - Feed home sudah render published posts via TanStack Query infinite query dengan SSR prefetch dari route loader.
 - Auth username/email + password sudah terhubung ke Better Auth, lengkap dengan halaman sign-in dan sign-up.
 - Database schema awal dan migration sudah ada untuk auth tables + posts.
-- API layer sudah punya oRPC contract/router untuk `posts.getMany`, `posts.getOnePostSlug`, dan `posts.create`.
-- UI untuk create/edit/detail post, profile, settings, dashboard, bookmark, dan comments belum ada.
+- API layer sudah punya oRPC contract/router untuk `posts.getMany`, `posts.getOneByUsernameAndSlug`, dan `posts.create`.
+- UI create post dan detail post sudah ada, tapi profile, settings, dashboard, bookmark, comments, dan edit post belum ada.
 - Deployment target belum dipilih. Project masih pakai default TanStack Start + Vite/Nitro output.
 
 ## Environment And Commands
@@ -75,8 +75,9 @@
 - [x] oRPC context already injects auth session and DB connection.
 - [x] OpenAPI reference endpoint is served from `/api/orpc/reference`.
 - [x] Published posts list endpoint already supports cursor pagination.
-- [x] Single post fetch by slug already exists at contract/router level.
+- [x] Single post fetch by username and slug already exists at contract/router level.
 - [x] Create post endpoint already exists and requires auth.
+- [x] Create post endpoint now rejects authors without username because canonical post URLs depend on it.
 - [ ] No update post endpoint yet.
 - [ ] No delete post endpoint yet.
 - [ ] No profile/settings endpoints yet.
@@ -85,14 +86,14 @@
 ### UI And Routes
 
 - [x] Public feed route `/` exists under app shell.
+- [x] Authenticated create route `/new` exists under app shell.
+- [x] Public post detail route `/$username/$postSlug` exists under app shell.
 - [x] Navbar is already present and auth-aware.
 - [x] Empty state, pending skeleton, spinner, and toast feedback already exist.
 - [x] Feed card already shows author, date, reading time, likes, comments, and views.
-- [ ] Feed card title still links to `.`; real detail route is not wired yet.
-- [ ] Create post CTA exists in navbar but has no route/action behind it yet.
+- [x] Feed card title now links to the real detail route.
+- [x] Create post CTA in navbar now links to `/new`.
 - [ ] Profile menu items exist but are still placeholder actions.
-- [ ] No post detail route yet.
-- [ ] No create post route yet.
 - [ ] No edit post route yet.
 - [ ] No dashboard route yet.
 - [ ] No settings route yet.
@@ -102,24 +103,32 @@
 ## Active Gaps
 
 - [ ] Connect navbar actions to real routes instead of placeholders.
-- [ ] Build authenticated create-post flow around existing `posts.create` RPC.
-- [ ] Add post detail route that consumes existing `posts.getOnePostSlug`.
-- [ ] Define canonical route shape for posts, ideally slug-based and username-aware only if really needed.
+- [ ] Wire profile/settings dropdown items to actual routes.
+- [ ] Build edit/delete/dashboard flow around existing authoring model.
+- [ ] Expose drafts somewhere before enabling draft creation in the public UI.
+- [ ] Define whether canonical post URLs should remain username-aware or get an alias/redirect layer later.
 - [ ] Decide whether feed should stay infinite scroll/button-based or switch to paginated route search params.
 - [ ] Add local seed data to make feed/auth testing less manual.
 - [ ] Add route protection for future authenticated app pages such as create, dashboard, and settings.
 - [ ] Add better empty/error states for unauthenticated, not-found, and failed-query scenarios.
 
+## Known Bugs And Risks
+
+- [ ] Draft posts are still supported at API level, but there is no dashboard or draft detail route yet. The `/new` page intentionally publishes immediately to avoid sending users into a dead end.
+- [ ] Canonical post URLs depend on `username`. Backend create now blocks users without username, but there is still no UI flow to repair legacy/OAuth accounts that might miss that field.
+- [ ] Post detail still renders plain text content only. Rich text or markdown rendering is not implemented yet.
+- [ ] Production build currently emits large chunk warnings, and Nitro logs a non-blocking `shiki/unwasm` fallback warning during build. It still completes successfully, but bundle hygiene should be reviewed.
+
 ## Near-Term Plan
 
 ### Milestone 1 — Close the current MVP gap
 
-- [ ] Add `/new` or equivalent create-post route.
-- [ ] Build post form with TanStack Form and submit through oRPC create mutation.
-- [ ] After create, redirect to either draft detail page or feed with success toast.
-- [ ] Add `/posts/$slug` detail route using the existing post-by-slug API.
-- [ ] Wire feed cards to the real detail route.
-- [ ] Decide whether first release supports draft-only create or full publish workflow.
+- [x] Add `/new` or equivalent create-post route.
+- [x] Build post form with TanStack Form and submit through oRPC create mutation.
+- [x] After create, redirect to the live post detail page with success toast.
+- [x] Add username-aware detail route for published posts.
+- [x] Wire feed cards to the real detail route.
+- [ ] Decide when draft creation should be exposed in UI, since draft management surface still does not exist.
 
 ### Milestone 2 — Author workflow
 
@@ -164,4 +173,4 @@
 
 ## Recommended Next Move
 
-- [ ] Implement the first real authoring slice end-to-end: create post route, create mutation, success redirect, and detail route.
+- [ ] Implement the second authoring slice: dashboard/my-posts, draft visibility, and edit/delete controls.

@@ -36,6 +36,17 @@ export const createPostBodySchema = insertPostSchema.pick({
   status: true,
 })
 
+export const createPostFormSchema = z.object({
+  title: z.string().trim().min(1, { error: 'Title is required' }),
+  coverImageUrl: z.union([
+    z.literal(''),
+    z.url({ error: 'Cover image URL is invalid' }),
+  ]),
+  content: z.string().trim().min(1, { error: 'Content is required' }),
+})
+
+export type CreatePostFormInput = z.infer<typeof createPostFormSchema>
+
 export const getManyPostsParamsSchema = z.object({
   cursor: z.string().min(1).optional(),
   limit: z.coerce.number().int().min(1).max(50).default(10),

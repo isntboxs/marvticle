@@ -28,7 +28,7 @@ export const PostFeedCard = (post: Props) => {
   return (
     <Card className="gap-4 py-0">
       {post.coverImageUrl && (
-        <AspectRatio ratio={21 / 9}>
+        <AspectRatio ratio={2.38 / 1}>
           <img
             src={post.coverImageUrl}
             alt={post.title}

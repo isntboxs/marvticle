@@ -104,7 +104,7 @@ function RouteComponent() {
       </header>
 
       {post.coverImageUrl ? (
-        <AspectRatio ratio={21 / 9} className="overflow-hidden border">
+        <AspectRatio ratio={2.38 / 1} className="overflow-hidden border">
           <img
             src={post.coverImageUrl}
             alt={post.title}
