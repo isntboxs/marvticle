@@ -7,10 +7,12 @@ export const env = createEnv({
 
   client: {
     VITE_APP_URL: z.url(),
+    VITE_S3_BUCKET_NAME: z.string(),
   },
 
   runtimeEnv: {
     VITE_APP_URL: import.meta.env.VITE_APP_URL,
+    VITE_S3_BUCKET_NAME: import.meta.env.VITE_S3_BUCKET_NAME,
   },
   emptyStringAsUndefined: true,
 })

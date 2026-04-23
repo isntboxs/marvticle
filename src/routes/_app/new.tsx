@@ -5,7 +5,6 @@ import {
   createFileRoute,
   redirect,
   useNavigate,
-  useRouteContext,
 } from '@tanstack/react-router'
 import { ArrowLeftIcon, NotePencilIcon } from '@phosphor-icons/react'
 import { AlertTriangleIcon } from 'lucide-react'
@@ -36,6 +35,7 @@ import {
 } from '#/hooks/use-posts'
 import { orpc } from '#/orpc/client'
 import { createPostFormSchema } from '#/schemas/posts.schema'
+import { ImageDropzone } from '#/components/image-dropzone'
 
 export const Route = createFileRoute('/_app/new')({
   beforeLoad: ({ context, location }) => {
@@ -62,7 +62,7 @@ export const Route = createFileRoute('/_app/new')({
 function RouteComponent() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const { auth } = useRouteContext({ from: '__root__' })
+  const { auth } = Route.useRouteContext()
   const username = auth?.user.username
 
   const createPostMutation = useMutation(orpc.posts.create.mutationOptions())
@@ -179,6 +179,40 @@ function RouteComponent() {
               >
                 <FieldGroup>
                   <form.Field
+                    name="coverImageUrl"
+                    children={(field) => {
+                      const isInvalid =
+                        field.state.meta.isTouched && !field.state.meta.isValid
+
+                      return (
+                        <Field data-invalid={isInvalid}>
+                          <FieldLabel htmlFor={field.name}>
+                            Cover image
+                          </FieldLabel>
+                          <ImageDropzone />
+                          {/* <Input
+                            id={field.name}
+                            name={field.name}
+                            value={field.state.value}
+                            onBlur={field.handleBlur}
+                            onChange={(e) => field.handleChange(e.target.value)}
+                            aria-invalid={isInvalid}
+                            placeholder="https://example.com/cover.jpg"
+                            autoComplete="off"
+                            type="url"
+                          /> */}
+                          <FieldDescription>
+                            Opsional. Kosongkan kalau belum punya cover.
+                          </FieldDescription>
+                          {isInvalid ? (
+                            <FieldError errors={field.state.meta.errors} />
+                          ) : null}
+                        </Field>
+                      )
+                    }}
+                  />
+
+                  <form.Field
                     name="title"
                     children={(field) => {
                       const isInvalid =
@@ -199,39 +233,6 @@ function RouteComponent() {
                           />
                           <FieldDescription>
                             Judul ini dipakai untuk generate slug otomatis.
-                          </FieldDescription>
-                          {isInvalid ? (
-                            <FieldError errors={field.state.meta.errors} />
-                          ) : null}
-                        </Field>
-                      )
-                    }}
-                  />
-
-                  <form.Field
-                    name="coverImageUrl"
-                    children={(field) => {
-                      const isInvalid =
-                        field.state.meta.isTouched && !field.state.meta.isValid
-
-                      return (
-                        <Field data-invalid={isInvalid}>
-                          <FieldLabel htmlFor={field.name}>
-                            Cover image URL
-                          </FieldLabel>
-                          <Input
-                            id={field.name}
-                            name={field.name}
-                            value={field.state.value}
-                            onBlur={field.handleBlur}
-                            onChange={(e) => field.handleChange(e.target.value)}
-                            aria-invalid={isInvalid}
-                            placeholder="https://example.com/cover.jpg"
-                            autoComplete="off"
-                            type="url"
-                          />
-                          <FieldDescription>
-                            Opsional. Kosongkan kalau belum punya cover.
                           </FieldDescription>
                           {isInvalid ? (
                             <FieldError errors={field.state.meta.errors} />
