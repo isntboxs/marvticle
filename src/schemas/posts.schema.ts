@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { authorSchema } from '#/schemas/users.schema'
 import { createInsertSchema, createSelectSchema } from '#/schemas/drizzle-zod'
 import { postsTable } from '#/db/schemas'
+import { POSTS_COVER_FOLDER } from '#/lib/storage'
 
 const selectPostSchema = createSelectSchema(postsTable, {
   status: (s) => s.default('PUBLISHED'),
@@ -14,12 +15,23 @@ const selectPostSchema = createSelectSchema(postsTable, {
 const insertPostSchema = createInsertSchema(postsTable, {
   title: (s) => s.trim().nonempty(),
   content: (s) => s.trim().nonempty(),
-  coverImageUrl: z.url().optional(),
   status: (s) =>
     s
       .default('DRAFT')
       .refine((value) => ['DRAFT', 'PUBLISHED', 'ARCHIVED'].includes(value)),
 })
+
+const postCoverImageKeySchema = z
+  .string()
+  .trim()
+  .regex(new RegExp(`^${POSTS_COVER_FOLDER}/.+$`), {
+    error: `Cover image key must be stored under ${POSTS_COVER_FOLDER}/`,
+  })
+
+const coverImageReferenceSchema = z.union([
+  z.url({ error: 'Cover image URL is invalid' }),
+  postCoverImageKeySchema,
+])
 
 export const postSchema = selectPostSchema
   .extend({
@@ -29,19 +41,20 @@ export const postSchema = selectPostSchema
     authorId: true,
   })
 
-export const createPostBodySchema = insertPostSchema.pick({
-  title: true,
-  coverImageUrl: true,
-  content: true,
-  status: true,
-})
+export const createPostBodySchema = insertPostSchema
+  .pick({
+    title: true,
+    content: true,
+    status: true,
+    coverImageUrl: true,
+  })
+  .extend({
+    coverImageUrl: coverImageReferenceSchema.optional(),
+  })
 
 export const createPostFormSchema = z.object({
   title: z.string().trim().min(1, { error: 'Title is required' }),
-  coverImageUrl: z.union([
-    z.literal(''),
-    z.url({ error: 'Cover image URL is invalid' }),
-  ]),
+  coverImageUrl: z.union([z.literal(''), coverImageReferenceSchema]),
   content: z.string().trim().min(1, { error: 'Content is required' }),
 })
 

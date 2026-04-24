@@ -14,6 +14,11 @@ import {
   ImageDropzoneUploadedState,
   ImageDropzoneUploadingState,
 } from '#/components/image-dropzone-state'
+import {
+  getStorageObjectUrl,
+  isStorageObjectKey,
+  normalizeStorageObjectKey,
+} from '#/lib/storage'
 
 interface ImageDropzoneState {
   id: string | null
@@ -30,9 +35,16 @@ interface ImageDropzoneState {
 interface ImageDropzoneProps {
   value?: string
   onChange?: (value: string) => void
+  folder: string
+  onUploadingChange?: (uploading: boolean) => void
 }
 
-export const ImageDropzone = ({ value, onChange }: ImageDropzoneProps) => {
+export const ImageDropzone = ({
+  value,
+  onChange,
+  folder,
+  onUploadingChange,
+}: ImageDropzoneProps) => {
   const [fileState, setFileState] = useState<ImageDropzoneState>({
     error: false,
     file: null,
@@ -41,15 +53,39 @@ export const ImageDropzone = ({ value, onChange }: ImageDropzoneProps) => {
     progress: 0,
     isDeleting: false,
     fileType: 'image',
-    key: value,
+    key: value ? normalizeStorageObjectKey(value) : undefined,
+    objectUrl: getStorageObjectUrl(value) ?? undefined,
   })
 
+  const deleteObject = useCallback(async (key: string) => {
+    const deleteResponse = await fetch('/api/s3', {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        key,
+      }),
+    })
+
+    if (!deleteResponse.ok) {
+      throw new Error('Failed to delete file from storage')
+    }
+  }, [])
+
   const uploadFile = useCallback(
-    async (file: File) => {
+    async (
+      file: File,
+      previousState?: Pick<ImageDropzoneState, 'key' | 'objectUrl'>
+    ) => {
+      const previousKey = previousState?.key
+      const previousObjectUrl = previousState?.objectUrl
+
       setFileState((prev) => ({
         ...prev,
         uploading: true,
         progress: 0,
+        error: false,
       }))
 
       try {
@@ -62,26 +98,17 @@ export const ImageDropzone = ({ value, onChange }: ImageDropzoneProps) => {
             fileName: file.name,
             contentType: file.type,
             size: file.size,
+            folder,
             isImage: file.type.startsWith('image/'),
           }),
         })
 
         if (!presignedUrlResponse.ok) {
-          toast.error('Upload failed', {
-            description: 'Failed to get presigned url',
-          })
-
-          setFileState((prev) => ({
-            ...prev,
-            uploading: false,
-            progress: 0,
-            error: true,
-          }))
-
-          return
+          throw new Error('Failed to get presigned url')
         }
 
         const { presignedUrl, key } = await presignedUrlResponse.json()
+        const normalizedKey = normalizeStorageObjectKey(key)
 
         await new Promise<void>((resolve, reject) => {
           const xhr = new XMLHttpRequest()
@@ -103,10 +130,10 @@ export const ImageDropzone = ({ value, onChange }: ImageDropzoneProps) => {
                 ...prev,
                 uploading: false,
                 progress: 100,
-                key,
+                key: normalizedKey,
               }))
 
-              onChange?.(key)
+              onChange?.(normalizedKey)
 
               toast.success('Upload successful', {
                 description: 'File uploaded successfully',
@@ -126,35 +153,72 @@ export const ImageDropzone = ({ value, onChange }: ImageDropzoneProps) => {
           xhr.setRequestHeader('Content-Type', file.type)
           xhr.send(file)
         })
+
+        if (
+          previousKey &&
+          previousKey !== normalizedKey &&
+          isStorageObjectKey(previousKey)
+        ) {
+          await deleteObject(previousKey)
+        }
+
+        if (
+          previousObjectUrl &&
+          previousObjectUrl !== getStorageObjectUrl(previousKey) &&
+          !previousObjectUrl.startsWith('http')
+        ) {
+          URL.revokeObjectURL(previousObjectUrl)
+        }
       } catch (error) {
         toast.error('Upload failed', {
           description:
             error instanceof Error ? error.message : 'Failed to upload file',
         })
 
-        setFileState((prev) => ({
-          ...prev,
-          uploading: false,
-          progress: 0,
-          error: true,
-        }))
+        setFileState((prev) => {
+          if (previousKey || previousObjectUrl) {
+            if (prev.objectUrl && prev.objectUrl !== previousObjectUrl) {
+              URL.revokeObjectURL(prev.objectUrl)
+            }
+
+            return {
+              ...prev,
+              key: previousKey,
+              objectUrl: previousObjectUrl,
+              uploading: false,
+              progress: 0,
+              error: false,
+            }
+          }
+
+          return {
+            ...prev,
+            uploading: false,
+            progress: 0,
+            error: true,
+          }
+        })
       }
     },
-    [onChange]
+    [deleteObject, folder, onChange]
   )
 
   const renderContent = () => {
     if (fileState.uploading) {
+      if (!fileState.file) {
+        return <ImageDropzoneErrorState onSelect={open} />
+      }
+
       return (
         <ImageDropzoneUploadingState
           progress={fileState.progress}
-          file={fileState.file!}
+          file={fileState.file}
         />
       )
     }
 
     if (fileState.error) {
-      return <ImageDropzoneErrorState />
+      return <ImageDropzoneErrorState onSelect={open} />
     }
 
     if (fileState.objectUrl) {
@@ -162,12 +226,16 @@ export const ImageDropzone = ({ value, onChange }: ImageDropzoneProps) => {
         <ImageDropzoneUploadedState
           previewUrl={fileState.objectUrl}
           isDeleting={fileState.isDeleting}
+          isReplacing={fileState.uploading}
           onDelete={handleRemoveFile}
+          onReplace={open}
         />
       )
     }
 
-    return <ImageDropzoneEmptyState isDragActive={isDragActive} />
+    return (
+      <ImageDropzoneEmptyState isDragActive={isDragActive} onSelect={open} />
+    )
   }
 
   const onDrop = useCallback(
@@ -177,25 +245,28 @@ export const ImageDropzone = ({ value, onChange }: ImageDropzoneProps) => {
 
         if (!file) return
 
-        if (fileState.objectUrl && !fileState.objectUrl.startsWith('http')) {
-          URL.revokeObjectURL(fileState.objectUrl)
+        const nextObjectUrl = URL.createObjectURL(file)
+        const previousState = {
+          key: fileState.key,
+          objectUrl: fileState.objectUrl,
         }
 
         setFileState({
           file: file,
           uploading: false,
           progress: 0,
-          objectUrl: URL.createObjectURL(file),
+          objectUrl: nextObjectUrl,
           error: false,
           id: uuidV4(),
           isDeleting: false,
           fileType: 'image',
+          key: fileState.key,
         })
 
-        void uploadFile(file)
+        void uploadFile(file, previousState)
       }
     },
-    [fileState.objectUrl, uploadFile]
+    [fileState.key, fileState.objectUrl, uploadFile]
   )
 
   const handleRemoveFile = async () => {
@@ -204,24 +275,8 @@ export const ImageDropzone = ({ value, onChange }: ImageDropzoneProps) => {
     try {
       setFileState((prev) => ({ ...prev, isDeleting: true }))
 
-      const deleteResponse = await fetch('/api/s3', {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          key: fileState.key,
-        }),
-      })
-
-      if (!deleteResponse.ok) {
-        toast.error('Delete failed', {
-          description: 'Failed to delete file from storage',
-        })
-
-        setFileState((prev) => ({ ...prev, isDeleting: false, error: true }))
-
-        return
+      if (fileState.key && isStorageObjectKey(fileState.key)) {
+        await deleteObject(fileState.key)
       }
 
       if (fileState.objectUrl && !fileState.objectUrl.startsWith('http')) {
@@ -240,6 +295,7 @@ export const ImageDropzone = ({ value, onChange }: ImageDropzoneProps) => {
         fileType: 'image',
         id: null,
         isDeleting: false,
+        key: undefined,
       }))
 
       toast.success('Delete success', {
@@ -282,6 +338,44 @@ export const ImageDropzone = ({ value, onChange }: ImageDropzoneProps) => {
   }
 
   useEffect(() => {
+    onUploadingChange?.(fileState.uploading)
+  }, [fileState.uploading, onUploadingChange])
+
+  useEffect(() => {
+    if (fileState.uploading) {
+      return
+    }
+
+    const normalizedValue = value ? normalizeStorageObjectKey(value) : ''
+
+    if (normalizedValue === '') {
+      if (fileState.key || fileState.objectUrl) {
+        setFileState((prev) => ({
+          ...prev,
+          key: undefined,
+          objectUrl: undefined,
+          file: null,
+          error: false,
+          progress: 0,
+          isDeleting: false,
+          id: null,
+        }))
+      }
+
+      return
+    }
+
+    if (normalizedValue !== fileState.key) {
+      setFileState((prev) => ({
+        ...prev,
+        key: normalizedValue,
+        objectUrl: getStorageObjectUrl(normalizedValue) ?? undefined,
+        error: false,
+      }))
+    }
+  }, [fileState.key, fileState.objectUrl, fileState.uploading, value])
+
+  useEffect(() => {
     return () => {
       if (fileState.objectUrl && !fileState.objectUrl.startsWith('http')) {
         URL.revokeObjectURL(fileState.objectUrl)
@@ -289,7 +383,7 @@ export const ImageDropzone = ({ value, onChange }: ImageDropzoneProps) => {
     }
   }, [fileState.objectUrl])
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+  const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
     onDrop,
     accept: {
       'image/*': ['.png', '.jpg', '.jpeg', '.gif', '.webp'],
@@ -298,7 +392,8 @@ export const ImageDropzone = ({ value, onChange }: ImageDropzoneProps) => {
     multiple: false,
     maxSize: 1024 * 1024 * 5, // 5MB
     onDropRejected: rejectedFile,
-    disabled: fileState.uploading || !!fileState.objectUrl,
+    disabled: fileState.uploading || fileState.isDeleting,
+    noClick: true,
   })
 
   return (

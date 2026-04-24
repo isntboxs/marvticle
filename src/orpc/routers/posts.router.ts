@@ -2,6 +2,7 @@ import { and, desc, eq, lt, or } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import limax from 'limax'
 import { postsTable, userTable } from '#/db/schemas'
+import { getStorageObjectUrl } from '#/lib/storage'
 import { orpcBase } from '#/orpc'
 import { orpcRequireAuthMiddleware } from '#/orpc/middlewares'
 import { postPaginationCursorSchema } from '#/schemas/posts.schema'
@@ -71,6 +72,15 @@ const decodeCursor = (cursor: string) => {
   }
 }
 
+const resolvePostCoverImageUrl = <T extends { coverImageUrl: string | null }>(
+  post: T
+): T => {
+  return {
+    ...post,
+    coverImageUrl: getStorageObjectUrl(post.coverImageUrl),
+  }
+}
+
 const getManyPostsHandler = orpcBase.posts.getMany.handler(
   async ({ context, input, errors }) => {
     const cursor = input.cursor ? decodeCursor(input.cursor) : null
@@ -104,7 +114,9 @@ const getManyPostsHandler = orpcBase.posts.getMany.handler(
       .limit(input.limit + 1)
 
     const hasMore = rows.length > input.limit
-    const items = hasMore ? rows.slice(0, input.limit) : rows
+    const items = (hasMore ? rows.slice(0, input.limit) : rows).map(
+      resolvePostCoverImageUrl
+    )
     const lastItem = items.at(-1)
 
     return {
@@ -144,7 +156,7 @@ const getOneByUsernameAndSlugHandler =
         })
       }
 
-      return post
+      return resolvePostCoverImageUrl(post)
     }
   )
 
@@ -182,7 +194,7 @@ const createPostHandler = orpcBase
       })
     }
 
-    return post
+    return resolvePostCoverImageUrl(post)
   })
 
 export const postsRouter = {

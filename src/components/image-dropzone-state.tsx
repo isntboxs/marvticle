@@ -7,8 +7,10 @@ import { Spinner } from '#/components/ui/spinner'
 
 export const ImageDropzoneEmptyState = ({
   isDragActive,
+  onSelect,
 }: {
   isDragActive: boolean
+  onSelect: () => void
 }) => {
   return (
     <div className="text-center">
@@ -28,14 +30,23 @@ export const ImageDropzoneEmptyState = ({
         </span>
       </p>
 
-      <Button type="button" variant="default" className="mt-4">
+      <Button
+        type="button"
+        variant="default"
+        className="mt-4"
+        onClick={onSelect}
+      >
         Select File
       </Button>
     </div>
   )
 }
 
-export const ImageDropzoneErrorState = () => {
+export const ImageDropzoneErrorState = ({
+  onSelect,
+}: {
+  onSelect: () => void
+}) => {
   return (
     <div className="text-center">
       <div className="mx-auto mb-4 flex size-12 items-center justify-center bg-destructive/30">
@@ -48,7 +59,12 @@ export const ImageDropzoneErrorState = () => {
         Something went wrong.
       </p>
 
-      <Button type="button" variant="default" className="mt-4">
+      <Button
+        type="button"
+        variant="default"
+        className="mt-4"
+        onClick={onSelect}
+      >
         Retry File Selection
       </Button>
     </div>
@@ -59,10 +75,14 @@ export const ImageDropzoneUploadedState = ({
   previewUrl,
   isDeleting,
   onDelete,
+  onReplace,
+  isReplacing,
 }: {
   previewUrl: string
   isDeleting: boolean
   onDelete: () => void
+  onReplace: () => void
+  isReplacing: boolean
 }) => {
   return (
     <div className="relative h-full w-full">
@@ -76,10 +96,20 @@ export const ImageDropzoneUploadedState = ({
         type="button"
         variant="destructive"
         className={cn('absolute top-4 right-4')}
-        disabled={isDeleting}
+        disabled={isDeleting || isReplacing}
         onClick={onDelete}
       >
         {isDeleting ? <Spinner /> : <TrashIcon />}
+      </Button>
+
+      <Button
+        type="button"
+        variant="secondary"
+        className={cn('absolute top-4 left-4')}
+        disabled={isDeleting || isReplacing}
+        onClick={onReplace}
+      >
+        {isReplacing ? <Spinner /> : 'Change cover'}
       </Button>
     </div>
   )

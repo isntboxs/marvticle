@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from '@tanstack/react-form-start'
 import {
@@ -33,6 +34,7 @@ import {
   DEFAULT_POSTS_LIMIT,
   postsInfiniteQueryOptions,
 } from '#/hooks/use-posts'
+import { POSTS_COVER_FOLDER } from '#/lib/storage'
 import { orpc } from '#/orpc/client'
 import { createPostFormSchema } from '#/schemas/posts.schema'
 import { ImageDropzone } from '#/components/image-dropzone'
@@ -64,6 +66,7 @@ function RouteComponent() {
   const queryClient = useQueryClient()
   const { auth } = Route.useRouteContext()
   const username = auth?.user.username
+  const [isCoverUploading, setIsCoverUploading] = useState(false)
 
   const createPostMutation = useMutation(orpc.posts.create.mutationOptions())
 
@@ -78,6 +81,14 @@ function RouteComponent() {
       onSubmit: createPostFormSchema,
     },
     onSubmit: async ({ value }) => {
+      if (isCoverUploading) {
+        toast.error('Cover image is still uploading', {
+          description: 'Wait until the upload finishes before publishing.',
+        })
+
+        return
+      }
+
       try {
         const coverImageUrl = value.coverImageUrl.trim()
 
@@ -189,18 +200,15 @@ function RouteComponent() {
                           <FieldLabel htmlFor={field.name}>
                             Cover image
                           </FieldLabel>
-                          <ImageDropzone />
-                          {/* <Input
-                            id={field.name}
-                            name={field.name}
+                          <ImageDropzone
                             value={field.state.value}
-                            onBlur={field.handleBlur}
-                            onChange={(e) => field.handleChange(e.target.value)}
-                            aria-invalid={isInvalid}
-                            placeholder="https://example.com/cover.jpg"
-                            autoComplete="off"
-                            type="url"
-                          /> */}
+                            folder={POSTS_COVER_FOLDER}
+                            onUploadingChange={setIsCoverUploading}
+                            onChange={(nextValue) => {
+                              field.handleChange(nextValue)
+                              field.handleBlur()
+                            }}
+                          />
                           <FieldDescription>
                             Opsional. Kosongkan kalau belum punya cover.
                           </FieldDescription>
@@ -287,7 +295,9 @@ function RouteComponent() {
                       const canSubmitNow = canSubmit ?? false
                       const formIsSubmitting = isSubmitting ?? false
                       const isPending =
-                        formIsSubmitting || createPostMutation.isPending
+                        formIsSubmitting ||
+                        createPostMutation.isPending ||
+                        isCoverUploading
 
                       return (
                         <Button
