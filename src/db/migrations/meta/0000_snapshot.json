@@ -1,5 +1,5 @@
 {
-  "id": "f8129e02-4b7d-4aba-90b1-055dd173e25c",
+  "id": "63dd8fcd-9be4-49ef-b445-9fe435d96daa",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -268,7 +268,7 @@
           "name": "username",
           "type": "text",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "display_username": {
           "name": "display_username",
@@ -442,8 +442,8 @@
           "primaryKey": false,
           "notNull": true
         },
-        "cover_image_url": {
-          "name": "cover_image_url",
+        "cover_image": {
+          "name": "cover_image",
           "type": "text",
           "primaryKey": false,
           "notNull": false
@@ -460,7 +460,7 @@
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": true,
-          "default": "'DRAFT'"
+          "default": "'PUBLISHED'"
         },
         "views_count": {
           "name": "views_count",
@@ -561,17 +561,22 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "posts_slug_unique": {
-          "name": "posts_slug_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "slug"
-          ]
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "posts_views_count_non_negative": {
+          "name": "posts_views_count_non_negative",
+          "value": "\"posts\".\"views_count\" >= 0"
+        },
+        "posts_likes_count_non_negative": {
+          "name": "posts_likes_count_non_negative",
+          "value": "\"posts\".\"likes_count\" >= 0"
+        },
+        "posts_comments_count_non_negative": {
+          "name": "posts_comments_count_non_negative",
+          "value": "\"posts\".\"comments_count\" >= 0"
         }
       },
-      "policies": {},
-      "checkConstraints": {},
       "isRLSEnabled": false
     }
   },

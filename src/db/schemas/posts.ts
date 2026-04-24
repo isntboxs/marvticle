@@ -28,10 +28,10 @@ export const postsTable = pgTable(
       .notNull()
       .references(() => userTable.id, { onDelete: 'cascade' }),
     title: text('title').notNull(),
-    slug: text('slug').unique().notNull(),
-    coverImageUrl: text('cover_image_url'),
+    slug: text('slug').notNull(),
+    coverImage: text('cover_image'),
     content: text('content').notNull(),
-    status: postStatusEnum('status').notNull().default('DRAFT'),
+    status: postStatusEnum('status').notNull().default('PUBLISHED'),
     viewsCount: integer('views_count').notNull().default(0),
     likesCount: integer('likes_count').notNull().default(0),
     commentsCount: integer('comments_count').notNull().default(0),

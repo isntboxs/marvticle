@@ -13,24 +13,23 @@ import { AspectRatio } from '#/components/ui/aspect-ratio'
 import { Card, CardContent, CardFooter, CardHeader } from '#/components/ui/card'
 import { UserAvatar } from '#/components/user-avatar'
 import { getPostReadTime } from '#/lib/posts'
+import { cn } from '#/lib/utils'
 
 type Props = RouterOutputs['posts']['getMany']['items'][number]
 
 export const PostFeedCard = (post: Props) => {
-  const authorUsername = post.author.username ?? 'unknown'
-  const postDetailParams = post.author.username
-    ? {
-        username: post.author.username,
-        postSlug: post.slug,
-      }
-    : null
+  const authorUsername = post.author.username
+  const postDetailParams = {
+    username: post.author.username,
+    postSlug: post.slug,
+  }
 
   return (
-    <Card className="gap-4 py-0">
-      {post.coverImageUrl && (
+    <Card className={cn('gap-4 py-0', !post.coverImage && 'pt-4')}>
+      {post.coverImage && (
         <AspectRatio ratio={2.38 / 1}>
           <img
-            src={post.coverImageUrl}
+            src={post.coverImage}
             alt={post.title}
             className="h-full w-full object-cover"
           />
@@ -62,22 +61,16 @@ export const PostFeedCard = (post: Props) => {
       </CardHeader>
 
       <CardContent className="px-0 pr-4 pl-16">
-        {postDetailParams ? (
-          <Link
-            to="/$username/$postSlug"
-            params={postDetailParams}
-            viewTransition
-            className="transition-all ease-in-out hover:text-muted-foreground"
-          >
-            <span className="line-clamp-2 text-2xl leading-relaxed font-bold">
-              {post.title}
-            </span>
-          </Link>
-        ) : (
+        <Link
+          to="/$username/$postSlug"
+          params={postDetailParams}
+          viewTransition
+          className="transition-all ease-in-out hover:text-muted-foreground"
+        >
           <span className="line-clamp-2 text-2xl leading-relaxed font-bold">
             {post.title}
           </span>
-        )}
+        </Link>
       </CardContent>
 
       <CardFooter className="border-t-0 px-0 pr-4 pl-14">
@@ -85,17 +78,24 @@ export const PostFeedCard = (post: Props) => {
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm">
               <ThumbsUpIcon className="size-4" />
-              <span>{post.likesCount} likes</span>
+              <span>
+                {post.likesCount} {post.likesCount === 1 ? 'like' : 'likes'}
+              </span>
             </Button>
 
             <Button variant="ghost" size="sm">
               <ChatCircleIcon className="size-4" />
-              <span>{post.commentsCount} comments</span>
+              <span>
+                {post.commentsCount}{' '}
+                {post.commentsCount === 1 ? 'comment' : 'comments'}
+              </span>
             </Button>
 
             <Button variant="ghost" size="sm">
-              <EyeIcon className="mr-1 size-4" />
-              <span>{post.viewsCount} views</span>
+              <EyeIcon className="size-4" />
+              <span>
+                {post.viewsCount} {post.viewsCount === 1 ? 'view' : 'views'}
+              </span>
             </Button>
           </div>
 

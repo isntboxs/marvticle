@@ -53,4 +53,15 @@ export const auth = betterAuth({
     expiresIn: 60 * 60 * 24 * 3,
   },
   trustedOrigins: [env.BETTER_AUTH_URL],
+  user: {
+    additionalFields: {
+      username: {
+        type: 'string',
+        required: true,
+        unique: true,
+        input: false,
+        fieldName: 'username',
+      },
+    },
+  },
 })

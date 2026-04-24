@@ -1,7 +1,7 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
-import { CheckIcon } from '@phosphor-icons/react/dist/ssr'
 import {
+  CheckIcon,
   CopyIcon,
   FacebookLogoIcon,
   LinkedinLogoIcon,
@@ -45,6 +45,8 @@ export const PostShareDialog = ({
   authorUsername,
 }: PostShareDialogProps) => {
   const [isCopied, setIsCopied] = useState<boolean>(false)
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
   const fullUrl = typeof window !== 'undefined' ? window.location.href : ''
   const shareText = `"${postTitle}" by @${authorUsername}`
 
@@ -70,8 +72,10 @@ export const PostShareDialog = ({
         description: `The link has been copied to your clipboard.`,
       })
 
-      setTimeout(() => {
+      if (copyTimerRef.current) clearTimeout(copyTimerRef.current)
+      copyTimerRef.current = setTimeout(() => {
         setIsCopied(false)
+        copyTimerRef.current = null
       }, 3000)
     } catch (error) {
       toast.error('Failed to copy link', {
@@ -82,6 +86,12 @@ export const PostShareDialog = ({
 
   const handleShareOnPlatform = useCallback((platformUrl: string) => {
     window.open(platformUrl, '_blank', 'noopener,noreferrer')
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      if (copyTimerRef.current) clearTimeout(copyTimerRef.current)
+    }
   }, [])
 
   return (

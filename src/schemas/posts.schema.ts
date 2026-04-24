@@ -14,10 +14,10 @@ const selectPostSchema = createSelectSchema(postsTable, {
 const insertPostSchema = createInsertSchema(postsTable, {
   title: (s) => s.trim().nonempty(),
   content: (s) => s.trim().nonempty(),
-  coverImageUrl: z.url().optional(),
+  coverImage: z.string().optional(),
   status: (s) =>
     s
-      .default('DRAFT')
+      .default('PUBLISHED')
       .refine((value) => ['DRAFT', 'PUBLISHED', 'ARCHIVED'].includes(value)),
 })
 
@@ -29,23 +29,24 @@ export const postSchema = selectPostSchema
     authorId: true,
   })
 
-export const createPostBodySchema = insertPostSchema.pick({
-  title: true,
-  coverImageUrl: true,
-  content: true,
-  status: true,
-})
+export const createPostBodySchema = insertPostSchema
+  .pick({
+    title: true,
+    coverImage: true,
+    content: true,
+    status: true,
+  })
+  .extend({
+    title: z.string().trim().min(1, { error: 'Title is required' }),
+    coverImage: z.union([
+      z.literal(''),
+      z.url({ error: 'Cover image URL is invalid' }),
+    ]),
+    content: z.string().trim().min(1, { error: 'Content is required' }),
+    status: z.literal('PUBLISHED'),
+  })
 
-export const createPostFormSchema = z.object({
-  title: z.string().trim().min(1, { error: 'Title is required' }),
-  coverImageUrl: z.union([
-    z.literal(''),
-    z.url({ error: 'Cover image URL is invalid' }),
-  ]),
-  content: z.string().trim().min(1, { error: 'Content is required' }),
-})
-
-export type CreatePostFormInput = z.infer<typeof createPostFormSchema>
+export type CreatePostBodyInput = z.infer<typeof createPostBodySchema>
 
 export const getManyPostsParamsSchema = z.object({
   cursor: z.string().min(1).optional(),

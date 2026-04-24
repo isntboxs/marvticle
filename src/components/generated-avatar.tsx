@@ -33,7 +33,7 @@ export const GeneratedAvatar = ({ seed, style, className }: Props) => {
     <Avatar className={cn(className)}>
       <AvatarImage src={avatarUri} alt={seed} className={cn(className)} />
       <AvatarFallback className={cn('uppercase', className)}>
-        {seed.charAt(0)}
+        {Array.from(seed)[0] ?? '?'}
       </AvatarFallback>
     </Avatar>
   )

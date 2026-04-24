@@ -33,7 +33,7 @@ CREATE TABLE "user" (
 	"name" text NOT NULL,
 	"email" text NOT NULL,
 	"email_verified" boolean DEFAULT false NOT NULL,
-	"username" text,
+	"username" text NOT NULL,
 	"display_username" text,
 	"image" text,
 	"role" text,
@@ -60,15 +60,17 @@ CREATE TABLE "posts" (
 	"author_id" uuid NOT NULL,
 	"title" text NOT NULL,
 	"slug" text NOT NULL,
-	"cover_image_url" text,
+	"cover_image" text,
 	"content" text NOT NULL,
-	"status" "post_status" DEFAULT 'DRAFT' NOT NULL,
+	"status" "post_status" DEFAULT 'PUBLISHED' NOT NULL,
 	"views_count" integer DEFAULT 0 NOT NULL,
 	"likes_count" integer DEFAULT 0 NOT NULL,
 	"comments_count" integer DEFAULT 0 NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
-	CONSTRAINT "posts_slug_unique" UNIQUE("slug")
+	CONSTRAINT "posts_views_count_non_negative" CHECK ("posts"."views_count" >= 0),
+	CONSTRAINT "posts_likes_count_non_negative" CHECK ("posts"."likes_count" >= 0),
+	CONSTRAINT "posts_comments_count_non_negative" CHECK ("posts"."comments_count" >= 0)
 );
 --> statement-breakpoint
 ALTER TABLE "account" ADD CONSTRAINT "account_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint

@@ -22,6 +22,6 @@ export function usePosts(limit = DEFAULT_POSTS_LIMIT) {
   return {
     ...query,
     posts,
-    totalPosts: posts.length,
+    loadedPostsCount: posts.length,
   }
 }
