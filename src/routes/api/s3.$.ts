@@ -14,7 +14,12 @@ import { env } from '#/lib/env/client'
 import {
   createStorageObjectKey,
   normalizeStorageObjectKey,
+  POSTS_COVER_FOLDER,
 } from '#/lib/storage'
+import { auth } from '#/lib/auth/server'
+import { db } from '#/db'
+import { postsTable } from '#/db/schemas/posts'
+import { eq } from 'drizzle-orm'
 
 const fileUploadSchema = z.object({
   fileName: z.string().nonempty({ error: 'File name is required' }),
@@ -100,6 +105,20 @@ export const Route = createFileRoute('/api/s3/$')({
         )
 
         try {
+          const session = await auth.api.getSession({
+            headers: request.headers,
+          })
+
+          if (!session) {
+            return new Response(
+              JSON.stringify({ error: 'Unauthorized' }),
+              {
+                status: 401,
+                headers: { 'Content-Type': 'application/json' },
+              }
+            )
+          }
+
           const json = await request.json()
 
           const result = fileUploadSchema.safeParse(json)
@@ -121,7 +140,49 @@ export const Route = createFileRoute('/api/s3/$')({
             )
           }
 
-          const { fileName, contentType, folder, size } = result.data
+          const { fileName, contentType, folder, size, isImage } = result.data
+
+          const ALLOWED_FOLDERS = [POSTS_COVER_FOLDER]
+          if (!ALLOWED_FOLDERS.includes(folder)) {
+            return new Response(
+              JSON.stringify({ error: 'Invalid folder' }),
+              {
+                status: 400,
+                headers: { 'Content-Type': 'application/json' },
+              }
+            )
+          }
+
+          const MAX_FILE_SIZE = 5 * 1024 * 1024
+          if (size > MAX_FILE_SIZE) {
+            return new Response(
+              JSON.stringify({ error: 'File size exceeds 5MB limit' }),
+              {
+                status: 400,
+                headers: { 'Content-Type': 'application/json' },
+              }
+            )
+          }
+
+          if (isImage) {
+            const ALLOWED_IMAGE_TYPES = [
+              'image/png',
+              'image/jpeg',
+              'image/jpg',
+              'image/gif',
+              'image/webp',
+            ]
+            if (!ALLOWED_IMAGE_TYPES.includes(contentType)) {
+              return new Response(
+                JSON.stringify({ error: 'Invalid image content type' }),
+                {
+                  status: 400,
+                  headers: { 'Content-Type': 'application/json' },
+                }
+              )
+            }
+          }
+
           const uniqueKey = createStorageObjectKey({
             folder,
             fileName,
@@ -176,6 +237,20 @@ export const Route = createFileRoute('/api/s3/$')({
         )
 
         try {
+          const session = await auth.api.getSession({
+            headers: request.headers,
+          })
+
+          if (!session) {
+            return new Response(
+              JSON.stringify({ error: 'Unauthorized' }),
+              {
+                status: 401,
+                headers: { 'Content-Type': 'application/json' },
+              }
+            )
+          }
+
           const json = await request.json()
 
           const result = fileDeleteSchema.safeParse(json)
@@ -199,6 +274,24 @@ export const Route = createFileRoute('/api/s3/$')({
 
           const key = normalizeStorageObjectKey(result.data.key)
 
+          const post = await db.query.postsTable.findFirst({
+            where: eq(postsTable.coverImageUrl, key),
+            columns: {
+              id: true,
+              authorId: true,
+            },
+          })
+
+          if (post && post.authorId !== session.user.id) {
+            return new Response(
+              JSON.stringify({ error: 'Forbidden' }),
+              {
+                status: 403,
+                headers: { 'Content-Type': 'application/json' },
+              }
+            )
+          }
+
           const command = new DeleteObjectCommand({
             Bucket: env.VITE_S3_BUCKET_NAME,
             Key: key,
@@ -219,12 +312,7 @@ export const Route = createFileRoute('/api/s3/$')({
           console.error({ error }, 'Failed to process file delete request')
 
           return new Response(
-            JSON.stringify({
-              error:
-                error instanceof Error
-                  ? error.message
-                  : 'Failed to process file delete request',
-            }),
+            JSON.stringify({ error: 'Failed to process file delete request' }),
             {
               status: 500,
               headers: { 'Content-Type': 'application/json' },

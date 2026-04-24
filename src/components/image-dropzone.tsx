@@ -25,10 +25,8 @@ interface ImageDropzoneState {
   file: File | null
   uploading: boolean
   progress: number
-  key?: string
   isDeleting: boolean
   error: boolean
-  objectUrl?: string
   fileType: 'image' | 'video'
 }
 
@@ -53,9 +51,10 @@ export const ImageDropzone = ({
     progress: 0,
     isDeleting: false,
     fileType: 'image',
-    key: value ? normalizeStorageObjectKey(value) : undefined,
-    objectUrl: getStorageObjectUrl(value) ?? undefined,
   })
+
+  const derivedKey = value ? normalizeStorageObjectKey(value) : ''
+  const derivedObjectUrl = derivedKey ? getStorageObjectUrl(derivedKey) ?? undefined : undefined
 
   const deleteObject = useCallback(async (key: string) => {
     const deleteResponse = await fetch('/api/s3', {
@@ -76,7 +75,7 @@ export const ImageDropzone = ({
   const uploadFile = useCallback(
     async (
       file: File,
-      previousState?: Pick<ImageDropzoneState, 'key' | 'objectUrl'>
+      previousState?: { key?: string; objectUrl?: string }
     ) => {
       const previousKey = previousState?.key
       const previousObjectUrl = previousState?.objectUrl
@@ -130,7 +129,6 @@ export const ImageDropzone = ({
                 ...prev,
                 uploading: false,
                 progress: 100,
-                key: normalizedKey,
               }))
 
               onChange?.(normalizedKey)
@@ -176,26 +174,11 @@ export const ImageDropzone = ({
         })
 
         setFileState((prev) => {
-          if (previousKey || previousObjectUrl) {
-            if (prev.objectUrl && prev.objectUrl !== previousObjectUrl) {
-              URL.revokeObjectURL(prev.objectUrl)
-            }
-
-            return {
-              ...prev,
-              key: previousKey,
-              objectUrl: previousObjectUrl,
-              uploading: false,
-              progress: 0,
-              error: false,
-            }
-          }
-
           return {
             ...prev,
             uploading: false,
             progress: 0,
-            error: true,
+            error: previousKey || previousObjectUrl ? false : true,
           }
         })
       }
@@ -221,10 +204,10 @@ export const ImageDropzone = ({
       return <ImageDropzoneErrorState onSelect={open} />
     }
 
-    if (fileState.objectUrl) {
+    if (derivedObjectUrl) {
       return (
         <ImageDropzoneUploadedState
-          previewUrl={fileState.objectUrl}
+          previewUrl={derivedObjectUrl}
           isDeleting={fileState.isDeleting}
           isReplacing={fileState.uploading}
           onDelete={handleRemoveFile}
@@ -245,42 +228,39 @@ export const ImageDropzone = ({
 
         if (!file) return
 
-        const nextObjectUrl = URL.createObjectURL(file)
         const previousState = {
-          key: fileState.key,
-          objectUrl: fileState.objectUrl,
+          key: derivedKey,
+          objectUrl: derivedObjectUrl,
         }
 
         setFileState({
           file: file,
           uploading: false,
           progress: 0,
-          objectUrl: nextObjectUrl,
           error: false,
           id: uuidV4(),
           isDeleting: false,
           fileType: 'image',
-          key: fileState.key,
         })
 
         void uploadFile(file, previousState)
       }
     },
-    [fileState.key, fileState.objectUrl, uploadFile]
+    [derivedKey, derivedObjectUrl, uploadFile]
   )
 
   const handleRemoveFile = async () => {
-    if (fileState.isDeleting || !fileState.objectUrl) return
+    if (fileState.isDeleting || !derivedObjectUrl) return
 
     try {
       setFileState((prev) => ({ ...prev, isDeleting: true }))
 
-      if (fileState.key && isStorageObjectKey(fileState.key)) {
-        await deleteObject(fileState.key)
+      if (derivedKey && isStorageObjectKey(derivedKey)) {
+        await deleteObject(derivedKey)
       }
 
-      if (fileState.objectUrl && !fileState.objectUrl.startsWith('http')) {
-        URL.revokeObjectURL(fileState.objectUrl)
+      if (derivedObjectUrl && !derivedObjectUrl.startsWith('http')) {
+        URL.revokeObjectURL(derivedObjectUrl)
       }
 
       onChange?.('')
@@ -290,12 +270,10 @@ export const ImageDropzone = ({
         file: null,
         uploading: false,
         progress: 0,
-        objectUrl: undefined,
         error: false,
         fileType: 'image',
         id: null,
         isDeleting: false,
-        key: undefined,
       }))
 
       toast.success('Delete success', {
@@ -342,46 +320,12 @@ export const ImageDropzone = ({
   }, [fileState.uploading, onUploadingChange])
 
   useEffect(() => {
-    if (fileState.uploading) {
-      return
-    }
-
-    const normalizedValue = value ? normalizeStorageObjectKey(value) : ''
-
-    if (normalizedValue === '') {
-      if (fileState.key || fileState.objectUrl) {
-        setFileState((prev) => ({
-          ...prev,
-          key: undefined,
-          objectUrl: undefined,
-          file: null,
-          error: false,
-          progress: 0,
-          isDeleting: false,
-          id: null,
-        }))
-      }
-
-      return
-    }
-
-    if (normalizedValue !== fileState.key) {
-      setFileState((prev) => ({
-        ...prev,
-        key: normalizedValue,
-        objectUrl: getStorageObjectUrl(normalizedValue) ?? undefined,
-        error: false,
-      }))
-    }
-  }, [fileState.key, fileState.objectUrl, fileState.uploading, value])
-
-  useEffect(() => {
     return () => {
-      if (fileState.objectUrl && !fileState.objectUrl.startsWith('http')) {
-        URL.revokeObjectURL(fileState.objectUrl)
+      if (derivedObjectUrl && !derivedObjectUrl.startsWith('http')) {
+        URL.revokeObjectURL(derivedObjectUrl)
       }
     }
-  }, [fileState.objectUrl])
+  }, [derivedObjectUrl])
 
   const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
     onDrop,

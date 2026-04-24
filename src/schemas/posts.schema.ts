@@ -21,15 +21,33 @@ const insertPostSchema = createInsertSchema(postsTable, {
       .refine((value) => ['DRAFT', 'PUBLISHED', 'ARCHIVED'].includes(value)),
 })
 
+const escapeRegExp = (str: string) =>
+  str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
 const postCoverImageKeySchema = z
   .string()
   .trim()
-  .regex(new RegExp(`^${POSTS_COVER_FOLDER}/.+$`), {
-    error: `Cover image key must be stored under ${POSTS_COVER_FOLDER}/`,
-  })
+  .regex(
+    new RegExp(`^${escapeRegExp(POSTS_COVER_FOLDER)}/(?!.*(?:\\.\\.|//)).+$`),
+    {
+      error: `Cover image key must be stored under ${POSTS_COVER_FOLDER}/ and cannot contain '..' or '//'`,
+    }
+  )
 
 const coverImageReferenceSchema = z.union([
-  z.url({ error: 'Cover image URL is invalid' }),
+  z
+    .string()
+    .refine(
+      (value) => {
+        try {
+          const url = new URL(value)
+          return url.protocol === 'http:' || url.protocol === 'https:'
+        } catch {
+          return false
+        }
+      },
+      { message: 'Cover image URL must use http or https' }
+    ),
   postCoverImageKeySchema,
 ])
 

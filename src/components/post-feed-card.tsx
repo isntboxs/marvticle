@@ -18,12 +18,10 @@ type Props = RouterOutputs['posts']['getMany']['items'][number]
 
 export const PostFeedCard = (post: Props) => {
   const authorUsername = post.author.username ?? 'unknown'
-  const postDetailParams = post.author.username
-    ? {
-        username: post.author.username,
-        postSlug: post.slug,
-      }
-    : null
+  const postDetailParams = {
+    username: post.author.username ?? `user-${post.author.id}`,
+    postSlug: post.slug,
+  }
 
   return (
     <Card className="gap-4 py-0">
@@ -62,22 +60,16 @@ export const PostFeedCard = (post: Props) => {
       </CardHeader>
 
       <CardContent className="px-0 pr-4 pl-16">
-        {postDetailParams ? (
-          <Link
-            to="/$username/$postSlug"
-            params={postDetailParams}
-            viewTransition
-            className="transition-all ease-in-out hover:text-muted-foreground"
-          >
-            <span className="line-clamp-2 text-2xl leading-relaxed font-bold">
-              {post.title}
-            </span>
-          </Link>
-        ) : (
+        <Link
+          to="/$username/$postSlug"
+          params={postDetailParams}
+          viewTransition
+          className="transition-all ease-in-out hover:text-muted-foreground"
+        >
           <span className="line-clamp-2 text-2xl leading-relaxed font-bold">
             {post.title}
           </span>
-        )}
+        </Link>
       </CardContent>
 
       <CardFooter className="border-t-0 px-0 pr-4 pl-14">

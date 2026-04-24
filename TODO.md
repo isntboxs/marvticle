@@ -24,6 +24,12 @@
 - [x] `BETTER_AUTH_SECRET`
 - [x] `BETTER_AUTH_URL`
 - [x] `VITE_APP_URL`
+- [ ] `VITE_S3_BUCKET_NAME`
+- [ ] `VITE_S3_REGION`
+- [ ] `VITE_S3_ENDPOINT`
+- [ ] `VITE_S3_ACCESS_KEY_ID`
+- [ ] `VITE_S3_SECRET_ACCESS_KEY`
+- [ ] `VITE_S3_PUBLIC_BASE_URL`
 
 ### Core commands
 

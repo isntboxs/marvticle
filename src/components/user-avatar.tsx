@@ -11,10 +11,12 @@ export const UserAvatar = ({
   name: string
   className?: string
 }) => {
+  const displayName = name?.trim() || 'User'
+
   if (!image) {
     return (
       <GeneratedAvatar
-        seed={name}
+        seed={displayName}
         style="notionistsNeutral"
         className={cn('size-8 rounded-none after:border-none', className)}
       />
@@ -23,11 +25,11 @@ export const UserAvatar = ({
 
   return (
     <Avatar className={cn('size-8 rounded-none after:border-none', className)}>
-      <AvatarImage src={image} alt={name} className="rounded-none" />
+      <AvatarImage src={image} alt={displayName} className="rounded-none" />
       <AvatarFallback
         className={cn('size-8 rounded-none uppercase', className)}
       >
-        {name.charAt(0)}
+        {displayName.charAt(0)}
       </AvatarFallback>
     </Avatar>
   )

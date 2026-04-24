@@ -24,7 +24,7 @@ describe('storage helpers', () => {
 
   it('resolves storage keys through the local image endpoint', () => {
     expect(getStorageObjectUrl('posts-cover/123-cover.png')).toBe(
-      'https://cdn.marvagency.net/posts-cover/123-cover.png'
+      `${import.meta.env.VITE_S3_PUBLIC_BASE_URL}/posts-cover/123-cover.png`
     )
   })
 

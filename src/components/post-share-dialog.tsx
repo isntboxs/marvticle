@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { CheckIcon } from '@phosphor-icons/react/dist/ssr'
 import {
@@ -45,8 +45,14 @@ export const PostShareDialog = ({
   authorUsername,
 }: PostShareDialogProps) => {
   const [isCopied, setIsCopied] = useState<boolean>(false)
-  const fullUrl = typeof window !== 'undefined' ? window.location.href : ''
+  const [fullUrl, setFullUrl] = useState<string>('')
   const shareText = `"${postTitle}" by @${authorUsername}`
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setFullUrl(window.location.href)
+    }
+  }, [])
 
   const SHARE_LINKS = useMemo(
     () => ({
@@ -100,20 +106,22 @@ export const PostShareDialog = ({
               Share this post
             </Label>
 
-            <InputGroup>
-              <InputGroupInput id="link" defaultValue={fullUrl} readOnly />
-              <InputGroupAddon align="inline-end">
-                <InputGroupButton
-                  aria-label="Copy"
-                  title="Copy"
-                  size="icon-xs"
-                  className="w-full"
-                  onClick={handleCopyLink}
-                >
-                  {isCopied ? <CheckIcon /> : <CopyIcon />}
-                </InputGroupButton>
-              </InputGroupAddon>
-            </InputGroup>
+            {fullUrl && (
+              <InputGroup>
+                <InputGroupInput id="link" defaultValue={fullUrl} readOnly />
+                <InputGroupAddon align="inline-end">
+                  <InputGroupButton
+                    aria-label="Copy"
+                    title="Copy"
+                    size="icon-xs"
+                    className="w-full"
+                    onClick={handleCopyLink}
+                  >
+                    {isCopied ? <CheckIcon /> : <CopyIcon />}
+                  </InputGroupButton>
+                </InputGroupAddon>
+              </InputGroup>
+            )}
           </div>
 
           <Button

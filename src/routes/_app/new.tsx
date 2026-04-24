@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from '@tanstack/react-form-start'
 import {
@@ -67,6 +67,7 @@ function RouteComponent() {
   const { auth } = Route.useRouteContext()
   const username = auth?.user.username
   const [isCoverUploading, setIsCoverUploading] = useState(false)
+  const postCreatedRef = useRef(false)
 
   const createPostMutation = useMutation(orpc.posts.create.mutationOptions())
 
@@ -98,6 +99,8 @@ function RouteComponent() {
           content: value.content,
           status: 'PUBLISHED',
         })
+
+        postCreatedRef.current = true
 
         await queryClient.invalidateQueries({
           queryKey: postsInfiniteQueryOptions(DEFAULT_POSTS_LIMIT).queryKey,
@@ -133,6 +136,48 @@ function RouteComponent() {
       }
     },
   })
+
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      const coverImageUrl = form.state.values.coverImageUrl?.trim()
+      if (coverImageUrl && !postCreatedRef.current) {
+        e.preventDefault()
+        e.returnValue = ''
+      }
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+
+      const coverImageUrl = form.state.values.coverImageUrl?.trim()
+      if (coverImageUrl && !postCreatedRef.current) {
+        void fetch('/api/s3', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ key: coverImageUrl }),
+          keepalive: true,
+        })
+      }
+    }
+  }, [form.state.values.coverImageUrl])
+
+  const handleCancel = async () => {
+    const coverImageUrl = form.state.values.coverImageUrl?.trim()
+    if (coverImageUrl && !postCreatedRef.current) {
+      try {
+        await fetch('/api/s3', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ key: coverImageUrl }),
+        })
+      } catch (error) {
+        console.error('Failed to cleanup cover image:', error)
+      }
+    }
+    await navigate({ to: '/', viewTransition: true })
+  }
 
   return (
     <section className="flex flex-col gap-6">
@@ -283,10 +328,13 @@ function RouteComponent() {
                 </FieldGroup>
 
                 <div className="flex items-center justify-end gap-3">
-                  <Button asChild type="button" variant="outline" size="lg">
-                    <Link to="/" viewTransition>
-                      Cancel
-                    </Link>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="lg"
+                    onClick={handleCancel}
+                  >
+                    Cancel
                   </Button>
 
                   <form.Subscribe

@@ -98,6 +98,8 @@ export const ImageDropzoneUploadedState = ({
         className={cn('absolute top-4 right-4')}
         disabled={isDeleting || isReplacing}
         onClick={onDelete}
+        aria-label={isDeleting ? 'Deleting cover' : 'Delete cover'}
+        title={isDeleting ? 'Deleting cover' : 'Delete cover'}
       >
         {isDeleting ? <Spinner /> : <TrashIcon />}
       </Button>
@@ -108,6 +110,8 @@ export const ImageDropzoneUploadedState = ({
         className={cn('absolute top-4 left-4')}
         disabled={isDeleting || isReplacing}
         onClick={onReplace}
+        aria-label={isReplacing ? 'Replacing cover' : 'Change cover'}
+        title={isReplacing ? 'Replacing cover' : 'Change cover'}
       >
         {isReplacing ? <Spinner /> : 'Change cover'}
       </Button>

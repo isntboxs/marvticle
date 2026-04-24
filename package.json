@@ -6,10 +6,10 @@
     "#/*": "./src/*"
   },
   "scripts": {
-    "dev": "bun --bun vite dev --port 3001",
-    "build": "bun --bun vite build",
-    "preview": "bun --bun vite preview",
-    "start": "bun run .output/server/index.mjs",
+    "dev": "vite dev --port 3001",
+    "build": "vite build",
+    "preview": "vite preview",
+    "start": "node .output/server/index.mjs",
     "test": "vitest run",
     "lint": "eslint",
     "format": "prettier --check .",
@@ -83,6 +83,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@rsbuild/core": "^2.0.1",
     "@tailwindcss/typography": "^0.5.19",
     "@tanstack/devtools-vite": "latest",
     "@tanstack/eslint-config": "latest",

@@ -76,27 +76,25 @@ function RouteComponent() {
 
 function PostsFeedPending() {
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-6 py-10">
-      <section className="grid gap-4">
-        {Array.from({ length: 3 }).map((_, index) => (
-          <Card key={index} className="border">
-            <CardHeader className="gap-3">
-              <Skeleton className="h-5 w-2/3" />
-              <Skeleton className="h-4 w-40" />
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-[92%]" />
-              <Skeleton className="h-4 w-[84%]" />
-            </CardContent>
-            <CardFooter className="gap-3">
-              <Skeleton className="h-4 w-20" />
-              <Skeleton className="h-4 w-24" />
-              <Skeleton className="h-4 w-16" />
-            </CardFooter>
-          </Card>
-        ))}
-      </section>
-    </main>
+    <section className="grid gap-4">
+      {Array.from({ length: 3 }).map((_, index) => (
+        <Card key={index} className="border">
+          <CardHeader className="gap-3">
+            <Skeleton className="h-5 w-2/3" />
+            <Skeleton className="h-4 w-40" />
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-[92%]" />
+            <Skeleton className="h-4 w-[84%]" />
+          </CardContent>
+          <CardFooter className="gap-3">
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-4 w-16" />
+          </CardFooter>
+        </Card>
+      ))}
+    </section>
   )
 }
