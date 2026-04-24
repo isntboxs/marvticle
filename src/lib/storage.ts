@@ -1,4 +1,8 @@
 const ABSOLUTE_URL_PATTERN = /^[a-z][a-z\d+.-]*:\/\//i
+const STORAGE_PUBLIC_BASE_URL =
+  typeof import.meta !== 'undefined'
+    ? (import.meta.env.VITE_S3_PUBLIC_BASE_URL as string | undefined)
+    : undefined
 
 export const POSTS_COVER_FOLDER = 'posts-cover'
 
@@ -53,6 +57,10 @@ export const getStorageObjectUrl = (value: string | null | undefined) => {
 
   if (isAbsoluteUrl(normalizedValue)) {
     return normalizedValue
+  }
+
+  if (STORAGE_PUBLIC_BASE_URL) {
+    return `${STORAGE_PUBLIC_BASE_URL.replace(/\/+$/, '')}/${normalizedValue}`
   }
 
   return `/api/s3?key=${encodeURIComponent(normalizedValue)}`
