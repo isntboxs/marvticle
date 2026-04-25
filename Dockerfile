@@ -1,5 +1,5 @@
 # ---------- BASE ----------
-FROM oven/bun:alpine AS base
+FROM oven/bun:latest AS base
 WORKDIR /usr/src/app
 
 # install dependencies into temp directory
