@@ -151,20 +151,6 @@ const getOneByUsernameAndSlugHandler =
 const createPostHandler = orpcBase
   .use(orpcRequireAuthMiddleware)
   .posts.create.handler(async ({ context, input, errors }) => {
-    const [author] = await context.db
-      .select({
-        username: userTable.username,
-      })
-      .from(userTable)
-      .where(eq(userTable.id, context.auth.user.id))
-      .limit(1)
-
-    if (!author?.username) {
-      throw errors.BAD_REQUEST({
-        message: 'Author username is required before creating a post.',
-      })
-    }
-
     const slug = generateSlug(input.title)
 
     const [post] = await context.db

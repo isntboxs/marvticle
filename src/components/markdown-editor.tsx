@@ -136,7 +136,11 @@ const togglePrefixedLines = (
   const block = selection.value.slice(lineStart, lineEnd)
   const lines = block.split('\n')
 
-  if (selection.start === selection.end && lines.length === 1 && !lines[0]?.trim()) {
+  if (
+    selection.start === selection.end &&
+    lines.length === 1 &&
+    !lines[0]?.trim()
+  ) {
     const replacement = `${prefix}${placeholder}`
 
     return replaceRange({
@@ -152,7 +156,9 @@ const togglePrefixedLines = (
   const allPrefixed = lines.every((line) => line.startsWith(prefix))
   const nextBlock = allPrefixed
     ? lines.map((line) => line.slice(prefix.length)).join('\n')
-    : lines.map((line) => (line.length === 0 ? prefix : `${prefix}${line}`)).join('\n')
+    : lines
+        .map((line) => (line.length === 0 ? prefix : `${prefix}${line}`))
+        .join('\n')
 
   return replaceRange({
     value: selection.value,
@@ -164,7 +170,9 @@ const togglePrefixedLines = (
   })
 }
 
-const toggleOrderedList = (selection: EditorSelection): EditorTransformResult => {
+const toggleOrderedList = (
+  selection: EditorSelection
+): EditorTransformResult => {
   const { lineEnd, lineStart } = getLineRange(
     selection.value,
     selection.start,
@@ -173,7 +181,11 @@ const toggleOrderedList = (selection: EditorSelection): EditorTransformResult =>
   const block = selection.value.slice(lineStart, lineEnd)
   const lines = block.split('\n')
 
-  if (selection.start === selection.end && lines.length === 1 && !lines[0]?.trim()) {
+  if (
+    selection.start === selection.end &&
+    lines.length === 1 &&
+    !lines[0]?.trim()
+  ) {
     const replacement = '1. List item'
 
     return replaceRange({
@@ -209,7 +221,8 @@ const insertHorizontalRule = (
   selection: EditorSelection
 ): EditorTransformResult => {
   const needsLeadingSpacing =
-    selection.start > 0 && !selection.value.slice(0, selection.start).endsWith('\n\n')
+    selection.start > 0 &&
+    !selection.value.slice(0, selection.start).endsWith('\n\n')
   const needsTrailingSpacing =
     selection.end < selection.value.length &&
     !selection.value.slice(selection.end).startsWith('\n\n')
@@ -383,9 +396,13 @@ export const MarkdownEditor = ({
   ...props
 }: MarkdownEditorProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const pendingSelectionRef = useRef<{ end: number; start: number } | null>(null)
+  const pendingSelectionRef = useRef<{ end: number; start: number } | null>(
+    null
+  )
   const editorValue = typeof value === 'string' ? value : ''
-  const wordCount = editorValue.trim() ? editorValue.trim().split(/\s+/).length : 0
+  const wordCount = editorValue.trim()
+    ? editorValue.trim().split(/\s+/).length
+    : 0
 
   const restoreSelection = () => {
     const textarea = textareaRef.current
@@ -396,10 +413,7 @@ export const MarkdownEditor = ({
     }
 
     textarea.focus()
-    textarea.setSelectionRange(
-      pendingSelection.start,
-      pendingSelection.end
-    )
+    textarea.setSelectionRange(pendingSelection.start, pendingSelection.end)
     pendingSelectionRef.current = null
   }
 
@@ -443,66 +457,78 @@ export const MarkdownEditor = ({
     )
   }
 
-  const handleKeyDownInternal: NonNullable<ComponentProps<typeof Textarea>['onKeyDown']> =
-    (event) => {
-      onKeyDown?.(event)
+  const handleKeyDownInternal: NonNullable<
+    ComponentProps<typeof Textarea>['onKeyDown']
+  > = (event) => {
+    onKeyDown?.(event)
 
-      if (event.defaultPrevented || disabled) {
+    if (event.defaultPrevented || disabled) {
+      return
+    }
+
+    if ((event.metaKey || event.ctrlKey) && !event.shiftKey) {
+      if (event.key.toLowerCase() === 'b') {
+        event.preventDefault()
+        handleAction('bold')
         return
       }
 
-      if ((event.metaKey || event.ctrlKey) && !event.shiftKey) {
-        if (event.key.toLowerCase() === 'b') {
-          event.preventDefault()
-          handleAction('bold')
-          return
-        }
-
-        if (event.key.toLowerCase() === 'i') {
-          event.preventDefault()
-          handleAction('italic')
-          return
-        }
-
-        if (event.key.toLowerCase() === 'k') {
-          event.preventDefault()
-          handleAction('link')
-          return
-        }
+      if (event.key.toLowerCase() === 'i') {
+        event.preventDefault()
+        handleAction('italic')
+        return
       }
 
-      if (event.key === 'Tab') {
+      if (event.key.toLowerCase() === 'k') {
         event.preventDefault()
-
-        const textarea = textareaRef.current
-
-        if (!textarea) {
-          return
-        }
-
-        const selection = {
-          value: textarea.value,
-          start: textarea.selectionStart,
-          end: textarea.selectionEnd,
-        }
-
-        if (event.shiftKey) {
-          commitTransform(dedentSelection(selection))
-          return
-        }
-
-        commitTransform(
-          replaceRange({
-            value: textarea.value,
-            start: selection.start,
-            end: selection.end,
-            replacement: '  ',
-            nextSelectionStart: selection.start + 2,
-            nextSelectionEnd: selection.start + 2,
-          })
-        )
+        handleAction('link')
+        return
       }
     }
+
+    if (event.key === 'Tab') {
+      event.preventDefault()
+
+      const textarea = textareaRef.current
+
+      if (!textarea) {
+        return
+      }
+
+      const selection = {
+        value: textarea.value,
+        start: textarea.selectionStart,
+        end: textarea.selectionEnd,
+      }
+
+      if (event.shiftKey) {
+        commitTransform(dedentSelection(selection))
+        return
+      }
+
+      const spansMultipleLines =
+        selection.start !== selection.end &&
+        textarea.value.slice(selection.start, selection.end).includes('\n')
+
+      if (spansMultipleLines) {
+        commitTransform(
+          togglePrefixedLines(selection, { prefix: '  ', placeholder: '' })
+        )
+        return
+      }
+
+      commitTransform(
+        replaceRange({
+          value: textarea.value,
+          start: selection.start,
+          end: selection.end,
+          replacement: '  ',
+          nextSelectionStart: selection.start + 2,
+          nextSelectionEnd: selection.start + 2,
+        })
+      )
+    }
+  }
 
   return (
     <div className="overflow-hidden border">
@@ -523,7 +549,10 @@ export const MarkdownEditor = ({
       />
 
       <div className="flex flex-wrap items-center justify-between gap-2 border-t bg-muted/20 px-4 py-2 text-[11px] text-muted-foreground">
-        <p>Supports headings, lists, links, images, quotes, and fenced code blocks.</p>
+        <p>
+          Supports headings, lists, links, images, quotes, and fenced code
+          blocks.
+        </p>
         <p>{wordCount} words</p>
       </div>
     </div>

@@ -67,7 +67,11 @@ export const MarkdownMenuBar = ({
 }: MarkdownMenuBarProps) => {
   return (
     <TooltipProvider>
-      <div className="flex flex-wrap items-center gap-1">
+      <div
+        role="toolbar"
+        aria-label="Markdown formatting"
+        className="flex flex-wrap items-center gap-1"
+      >
         {actions.map(({ action, icon: Icon, label }) => (
           <Tooltip key={action}>
             <TooltipTrigger asChild>

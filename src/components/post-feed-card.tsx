@@ -11,6 +11,7 @@ import type { RouterOutputs } from '#/orpc/routers'
 import { Button } from '#/components/ui/button'
 import { AspectRatio } from '#/components/ui/aspect-ratio'
 import { Card, CardContent, CardFooter, CardHeader } from '#/components/ui/card'
+import { Separator } from '#/components/ui/separator'
 import { UserAvatar } from '#/components/user-avatar'
 import { getPostReadTime } from '#/lib/posts'
 import { cn } from '#/lib/utils'
@@ -46,16 +47,23 @@ export const PostFeedCard = (post: Props) => {
 
           <div className="flex h-full flex-1 flex-col justify-between">
             <p className="text-sm font-medium">@{authorUsername}</p>
-            <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <span>{formatDate(new Date(post.createdAt), 'MMM d')}</span>
-              <span>
-                (
-                {formatDistanceToNowStrict(new Date(post.createdAt), {
+
+            <div className="flex items-center gap-2">
+              <p className="text-xs text-muted-foreground">
+                {formatDate(new Date(post.createdAt), 'MMM d, yyyy')}
+              </p>
+
+              <Separator
+                orientation="vertical"
+                className="rounded-full data-vertical:h-1 data-vertical:w-1 data-vertical:self-center"
+              />
+
+              <p className="text-xs text-muted-foreground">
+                {formatDistanceToNowStrict(new Date(post.updatedAt), {
                   addSuffix: true,
                 })}
-                )
-              </span>
-            </p>
+              </p>
+            </div>
           </div>
         </div>
       </CardHeader>
@@ -102,8 +110,8 @@ export const PostFeedCard = (post: Props) => {
           <div className="flex items-center gap-2">
             <span>{getPostReadTime(post.content)} min read</span>
 
-            <Button variant="ghost" size="icon">
-              <BookmarkIcon className="size-4" />
+            <Button variant="ghost" size="icon" aria-label="Bookmark post">
+              <BookmarkIcon className="size-4" aria-hidden="true" />
             </Button>
           </div>
         </div>

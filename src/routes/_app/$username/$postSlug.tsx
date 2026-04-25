@@ -28,7 +28,9 @@ export const Route = createFileRoute('/_app/$username/$postSlug')({
   head: ({ loaderData }) => ({
     meta: [
       {
-        title: `${loaderData?.title} | marvticle`,
+        title: loaderData
+          ? `${loaderData.title} | marvticle`
+          : 'Post not found | marvticle',
       },
     ],
   }),

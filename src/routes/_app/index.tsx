@@ -36,9 +36,9 @@ function RouteComponent() {
       {posts.length === 0 ? (
         <Empty className="border">
           <EmptyHeader>
-            <EmptyTitle>Belum ada post yang dipublikasikan</EmptyTitle>
+            <EmptyTitle>No posts published yet</EmptyTitle>
             <EmptyDescription>
-              Data akan muncul di sini setelah ada post dengan status
+              Posts will appear here once they have status
               <code className="mx-1">PUBLISHED</code>.
             </EmptyDescription>
           </EmptyHeader>
