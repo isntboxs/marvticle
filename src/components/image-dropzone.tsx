@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { toast } from 'sonner'
-import { v4 as uuidV4 } from 'uuid'
 import type { FileRejection } from 'react-dropzone'
+import type { HTMLAttributes } from 'react'
 
 import { Card, CardContent } from '#/components/ui/card'
 import { cn } from '#/lib/utils'
@@ -12,46 +12,97 @@ import {
   ImageDropzoneUploadedState,
   ImageDropzoneUploadingState,
 } from '#/components/image-dropzone-state'
+import { IMAGE_MAX_FILE_SIZE } from '#/schemas/file-upload.schema'
+import { getManagedFileKey, getStorageUrl } from '#/utils/storage'
 
-interface ImageDropzoneState {
-  id: string | null
-  file: File | null
-  uploading: boolean
-  progress: number
-  key?: string
-  isDeleting: boolean
-  error: boolean
-  objectUrl?: string
-  fileType: 'image' | 'video'
+interface ManagedCoverFile {
+  fileKey: string | null
+  previewUrl: string
 }
 
-interface ImageDropzoneProps {
+interface ImageDropzoneProps
+  extends Omit<HTMLAttributes<HTMLDivElement>, 'onChange'> {
   value?: string
   onChange?: (value: string) => void
 }
 
-export const ImageDropzone = ({ onChange, value }: ImageDropzoneProps) => {
-  const [fileState, setFileState] = useState<ImageDropzoneState>({
-    error: false,
-    file: null,
-    id: null,
-    uploading: false,
-    progress: 0,
-    isDeleting: false,
-    fileType: 'image',
-    key: value,
-  })
+const getManagedCoverFromValue = (
+  value?: string
+): ManagedCoverFile | null => {
+  if (!value) {
+    return null
+  }
+
+  return {
+    fileKey: getManagedFileKey(value),
+    previewUrl: getStorageUrl(value),
+  }
+}
+
+const revokeObjectUrl = (url?: string | null) => {
+  if (url?.startsWith('blob:')) {
+    URL.revokeObjectURL(url)
+  }
+}
+
+export const ImageDropzone = ({
+  className,
+  onChange,
+  value,
+  ...props
+}: ImageDropzoneProps) => {
+  const [coverFile, setCoverFile] = useState<ManagedCoverFile | null>(() =>
+    getManagedCoverFromValue(value)
+  )
+  const [pendingFile, setPendingFile] = useState<File | null>(null)
+  const [uploading, setUploading] = useState(false)
+  const [progress, setProgress] = useState(0)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const xhrRef = useRef<XMLHttpRequest | null>(null)
+
+  const deleteManagedFile = useCallback(async (fileKey: string) => {
+    const deleteResponse = await fetch('/api/s3/cover-image', {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        fileKey,
+      }),
+    })
+
+    if (!deleteResponse.ok) {
+      let deleteErrorMessage = 'Failed to delete file from storage'
+
+      try {
+        const responseBody = (await deleteResponse.json()) as {
+          error?: string
+        }
+        deleteErrorMessage = responseBody.error ?? deleteErrorMessage
+      } catch {
+        // Ignore invalid JSON response bodies and fall back to generic copy.
+      }
+
+      throw new Error(deleteErrorMessage)
+    }
+  }, [])
 
   const uploadFile = useCallback(
     async (file: File) => {
-      setFileState((prev) => ({
-        ...prev,
-        uploading: true,
-        progress: 0,
-      }))
+      const previousCoverFile = coverFile
+      const temporaryPreviewUrl = URL.createObjectURL(file)
+
+      setCoverFile({
+        fileKey: previousCoverFile?.fileKey ?? null,
+        previewUrl: temporaryPreviewUrl,
+      })
+      setPendingFile(file)
+      setUploading(true)
+      setProgress(0)
+      setErrorMessage(null)
 
       try {
-        // 1. get presigned url from api
         const presignedUrlResponse = await fetch('/api/s3/cover-image', {
           method: 'POST',
           headers: {
@@ -67,253 +118,288 @@ export const ImageDropzone = ({ onChange, value }: ImageDropzoneProps) => {
         })
 
         if (!presignedUrlResponse.ok) {
-          toast.error('Upload failed', {
-            description: 'Failed to get presigned url',
-          })
+          let uploadErrorMessage = 'Failed to get presigned url'
 
-          setFileState((prev) => ({
-            ...prev,
-            uploading: false,
-            progress: 0,
-            error: true,
-          }))
+          try {
+            const responseBody = (await presignedUrlResponse.json()) as {
+              error?: string
+            }
+            uploadErrorMessage = responseBody.error ?? uploadErrorMessage
+          } catch {
+            // Ignore invalid JSON response bodies and fall back to generic copy.
+          }
 
-          return
+          throw new Error(uploadErrorMessage)
         }
 
-        const { presignedUrl, fileKey } =
+        const { fileKey, presignedUrl, publicUrl } =
           (await presignedUrlResponse.json()) as {
-            presignedUrl: string
             fileKey: string
+            presignedUrl: string
+            publicUrl: string
           }
 
         await new Promise<void>((resolve, reject) => {
           const xhr = new XMLHttpRequest()
+          xhrRef.current = xhr
 
           xhr.upload.onprogress = (event) => {
             if (event.lengthComputable) {
               const percentageComplete = (event.loaded / event.total) * 100
 
-              setFileState((prev) => ({
-                ...prev,
-                progress: Math.round(percentageComplete),
-              }))
+              setProgress(Math.round(percentageComplete))
             }
           }
 
           xhr.onload = () => {
+            xhrRef.current = null
+
             if (xhr.status === 200 || xhr.status === 204) {
-              setFileState((prev) => ({
-                ...prev,
-                uploading: false,
-                progress: 100,
-                key: fileKey,
-              }))
-
-              onChange?.(fileKey)
-
-              toast.success('Upload successful', {
-                description: 'File uploaded successfully',
-              })
-
               resolve()
             } else {
-              reject(new Error('Failed to upload file'))
+              reject(
+                new Error(
+                  xhr.responseText || 'Failed to upload file to object storage'
+                )
+              )
             }
           }
 
           xhr.onerror = () => {
-            reject(new Error('Failed to upload file'))
+            xhrRef.current = null
+            reject(new Error('Failed to upload file to object storage'))
+          }
+
+          xhr.onabort = () => {
+            xhrRef.current = null
+            reject(new Error('Upload cancelled'))
           }
 
           xhr.open('PUT', presignedUrl)
           xhr.setRequestHeader('Content-Type', file.type)
           xhr.send(file)
         })
+
+        revokeObjectUrl(temporaryPreviewUrl)
+
+        setCoverFile({
+          fileKey,
+          previewUrl: publicUrl,
+        })
+        setPendingFile(null)
+        setUploading(false)
+        setProgress(100)
+        setErrorMessage(null)
+        onChange?.(fileKey)
+
+        toast.success('Upload successful', {
+          description: previousCoverFile
+            ? 'Cover image replaced successfully'
+            : 'File uploaded successfully',
+        })
+
+        if (
+          previousCoverFile?.fileKey &&
+          previousCoverFile.fileKey !== fileKey
+        ) {
+          try {
+            await deleteManagedFile(previousCoverFile.fileKey)
+          } catch (error) {
+            toast.warning('Previous cover kept', {
+              description:
+                error instanceof Error
+                  ? error.message
+                  : 'The old cover could not be deleted automatically.',
+            })
+          }
+        }
       } catch (error) {
+        revokeObjectUrl(temporaryPreviewUrl)
+
+        setCoverFile(previousCoverFile ?? null)
+        setPendingFile(null)
+        setUploading(false)
+        setProgress(0)
+        setErrorMessage(
+          error instanceof Error ? error.message : 'Failed to upload file'
+        )
+
         toast.error('Upload failed', {
           description:
             error instanceof Error ? error.message : 'Failed to upload file',
         })
-
-        setFileState((prev) => ({
-          ...prev,
-          uploading: false,
-          progress: 0,
-          error: true,
-        }))
       }
     },
-    [onChange]
+    [coverFile, deleteManagedFile, onChange]
   )
 
   const renderContent = () => {
-    if (fileState.uploading) {
+    if (uploading && pendingFile) {
       return (
         <ImageDropzoneUploadingState
-          progress={fileState.progress}
-          file={fileState.file!}
+          file={pendingFile}
+          isReplacing={Boolean(coverFile?.fileKey)}
+          previewUrl={coverFile?.previewUrl}
+          progress={progress}
         />
       )
     }
 
-    if (fileState.error) {
-      return <ImageDropzoneErrorState />
+    if (errorMessage && !coverFile?.previewUrl) {
+      return (
+        <ImageDropzoneErrorState message={errorMessage} onRetry={open} />
+      )
     }
 
-    if (fileState.objectUrl) {
+    if (coverFile?.previewUrl) {
       return (
         <ImageDropzoneUploadedState
-          previewUrl={fileState.objectUrl}
-          isDeleting={fileState.isDeleting}
+          isDeleting={isDeleting}
+          onChange={open}
           onDelete={handleRemoveFile}
+          previewUrl={coverFile.previewUrl}
         />
       )
     }
 
-    return <ImageDropzoneEmptyState isDragActive={isDragActive} />
+    return <ImageDropzoneEmptyState isDragActive={isDragActive} onSelect={open} />
   }
 
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
-      if (acceptedFiles.length > 0) {
-        const file = acceptedFiles[0]
+      const file = acceptedFiles[0]
 
-        if (!file) return
-
-        if (fileState.objectUrl && !fileState.objectUrl.startsWith('http')) {
-          URL.revokeObjectURL(fileState.objectUrl)
-        }
-
-        setFileState({
-          file: file,
-          uploading: false,
-          progress: 0,
-          objectUrl: URL.createObjectURL(file),
-          error: false,
-          id: uuidV4(),
-          isDeleting: false,
-          fileType: 'image',
-        })
-
-        void uploadFile(file)
-      }
-    },
-    [fileState.objectUrl, uploadFile]
-  )
-
-  const handleRemoveFile = async () => {
-    if (fileState.isDeleting || !fileState.objectUrl) return
-
-    try {
-      setFileState((prev) => ({ ...prev, isDeleting: true }))
-
-      const deleteResponse = await fetch('/api/s3/cover-image', {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          fileKey: fileState.key,
-        }),
-      })
-
-      if (!deleteResponse.ok) {
-        toast.error('Delete failed', {
-          description: 'Failed to delete file from storage',
-        })
-
-        setFileState((prev) => ({ ...prev, isDeleting: false, error: true }))
-
+      if (!file) {
         return
       }
 
-      if (fileState.objectUrl && !fileState.objectUrl.startsWith('http')) {
-        URL.revokeObjectURL(fileState.objectUrl)
+      void uploadFile(file)
+    },
+    [uploadFile]
+  )
+
+  const handleRemoveFile = async () => {
+    if (isDeleting || uploading || !coverFile?.previewUrl) {
+      return
+    }
+
+    try {
+      setIsDeleting(true)
+      setErrorMessage(null)
+
+      if (coverFile.fileKey) {
+        await deleteManagedFile(coverFile.fileKey)
       }
 
       onChange?.('')
-
-      setFileState((prev) => ({
-        ...prev,
-        file: null,
-        uploading: false,
-        progress: 0,
-        objectUrl: undefined,
-        error: false,
-        fileType: 'image',
-        id: null,
-        isDeleting: false,
-      }))
+      setCoverFile(null)
+      setPendingFile(null)
+      setProgress(0)
+      setErrorMessage(null)
 
       toast.success('Delete success', {
-        description: 'File deleted from storage successfully',
+        description: 'Cover image removed successfully',
       })
     } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : 'Error while deleting file, please try again'
+      )
+
       toast.error('Delete failed', {
         description:
           error instanceof Error
             ? error.message
             : 'Error while deleting file, please try again',
       })
-
-      setFileState((prev) => ({ ...prev, isDeleting: false, error: true }))
+    } finally {
+      setIsDeleting(false)
     }
   }
 
   const rejectedFile = (fileRejection: FileRejection[]) => {
     if (fileRejection.length) {
-      const toManyFiles = fileRejection.find(
-        (rejection) => rejection.errors[0]?.code === 'too-many-files'
+      const hasTooManyFiles = fileRejection.some((rejection) =>
+        rejection.errors.some((error) => error.code === 'too-many-files')
       )
 
-      const fileSizeTooBig = fileRejection.find(
-        (rejection) => rejection.errors[0]?.code === 'file-too-large'
+      const hasFileTooLarge = fileRejection.some((rejection) =>
+        rejection.errors.some((error) => error.code === 'file-too-large')
       )
 
-      if (toManyFiles) {
+      const hasInvalidFileType = fileRejection.some((rejection) =>
+        rejection.errors.some((error) => error.code === 'file-invalid-type')
+      )
+
+      if (hasTooManyFiles) {
         toast.error('Upload failed', {
           description: 'Too many files selected, only 1 file is allowed',
         })
       }
 
-      if (fileSizeTooBig) {
+      if (hasFileTooLarge) {
         toast.error('Upload failed', {
           description: 'File size is too big, maximum file size is 5MB',
+        })
+      }
+
+      if (hasInvalidFileType) {
+        toast.error('Upload failed', {
+          description: 'Unsupported file type, use PNG, JPG, GIF, or WEBP',
         })
       }
     }
   }
 
   useEffect(() => {
-    return () => {
-      if (fileState.objectUrl && !fileState.objectUrl.startsWith('http')) {
-        URL.revokeObjectURL(fileState.objectUrl)
+    setCoverFile((currentCoverFile) => {
+      if (
+        value === currentCoverFile?.previewUrl ||
+        (!value && !currentCoverFile)
+      ) {
+        return currentCoverFile
       }
-    }
-  }, [fileState.objectUrl])
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+      return getManagedCoverFromValue(value)
+    })
+  }, [value])
+
+  useEffect(() => {
+    return () => {
+      xhrRef.current?.abort()
+      revokeObjectUrl(coverFile?.previewUrl)
+    }
+  }, [coverFile?.previewUrl])
+
+  const { getInputProps, getRootProps, isDragActive, open } = useDropzone({
     onDrop,
     accept: {
       'image/*': ['.png', '.jpg', '.jpeg', '.gif', '.webp'],
     },
     maxFiles: 1,
+    maxSize: IMAGE_MAX_FILE_SIZE,
     multiple: false,
-    maxSize: 1024 * 1024 * 5, // 5MB
+    noClick: true,
     onDropRejected: rejectedFile,
-    disabled: fileState.uploading || !!fileState.objectUrl,
+    disabled: uploading || isDeleting,
   })
 
   return (
     <Card
-      {...getRootProps()}
-      className={cn(
-        'aspect-[2.38/1] h-64 w-full border-2 border-dashed ring-0 transition-all duration-300 ease-in-out',
-        isDragActive
-          ? 'border-solid border-primary bg-primary/10'
-          : 'border-border hover:border-primary'
-      )}
+      {...getRootProps({
+        ...props,
+        className: cn(
+          'aspect-[2.38/1] h-64 w-full border-2 border-dashed ring-0 transition-all duration-300 ease-in-out',
+          isDragActive
+            ? 'border-solid border-primary bg-primary/10'
+            : 'border-border hover:border-primary',
+          coverFile?.previewUrl && 'border-solid',
+          uploading && 'pointer-events-none',
+          'overflow-hidden',
+          className
+        ),
+      })}
     >
       <CardContent className="flex h-full w-full items-center justify-center">
         <input {...getInputProps()} />

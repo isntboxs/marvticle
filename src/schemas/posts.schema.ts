@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { authorSchema } from '#/schemas/users.schema'
 import { createInsertSchema, createSelectSchema } from '#/schemas/drizzle-zod'
 import { postsTable } from '#/db/schemas'
+import { isManagedFileKey } from '#/utils/storage'
 
 const selectPostSchema = createSelectSchema(postsTable, {
   status: (s) => s.default('PUBLISHED'),
@@ -40,7 +41,9 @@ export const createPostBodySchema = insertPostSchema
     title: z.string().trim().min(1, { error: 'Title is required' }),
     coverImage: z.union([
       z.literal(''),
-      z.url({ error: 'Cover image URL is invalid' }),
+      z.string().refine(isManagedFileKey, {
+        error: 'Cover image key is invalid',
+      }),
     ]),
     content: z.string().trim().min(1, { error: 'Content is required' }),
     status: z.literal('PUBLISHED'),

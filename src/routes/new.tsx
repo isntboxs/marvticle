@@ -24,6 +24,7 @@ import { Spinner } from '#/components/ui/spinner'
 import { MarkdownRenderer } from '#/components/markdown-renderer'
 import { AspectRatio } from '#/components/ui/aspect-ratio'
 import { ImageDropzone } from '#/components/image-dropzone'
+import { getStorageUrl } from '#/utils/storage'
 
 export const Route = createFileRoute('/new')({
   beforeLoad: ({ context, location }) => {
@@ -152,7 +153,7 @@ function RouteComponent() {
                     <Field data-invalid={isInvalid}>
                       <ImageDropzone
                         value={field.state.value}
-                        // onChange={(e) => field.handleChange(e.target.value)}
+                        onChange={field.handleChange}
                         aria-invalid={isInvalid}
                       />
                       {isInvalid && (
@@ -235,7 +236,7 @@ function RouteComponent() {
                       className="overflow-hidden border"
                     >
                       <img
-                        src={coverImage}
+                        src={getStorageUrl(coverImage)}
                         alt={title}
                         className="h-full w-full object-cover"
                       />
