@@ -8,10 +8,9 @@ import {
 } from 'better-auth/client/plugins'
 
 import type { auth } from '#/lib/auth/server'
-import { env } from '#/lib/env/client'
 
 export const authClient = createAuthClient({
-  baseURL: env.VITE_APP_URL,
+  baseURL: import.meta.env.VITE_APP_URL,
   plugins: [
     usernameClient(),
     multiSessionClient(),
