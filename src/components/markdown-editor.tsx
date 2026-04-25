@@ -542,7 +542,7 @@ export const MarkdownEditor = ({
         disabled={disabled}
         onKeyDown={handleKeyDownInternal}
         className={cn(
-          'min-h-[50vh] resize-none border-0 bg-transparent! px-4 py-4 text-sm! leading-7 tracking-tight shadow-none ring-0!',
+          'min-h-[32vh] resize-none border-0 bg-transparent! px-4 py-4 text-base! leading-7 tracking-tight shadow-none ring-0!',
           className
         )}
         {...props}
