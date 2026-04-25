@@ -20,6 +20,11 @@ FROM base AS prerelease
 COPY --from=install /temp/dev/node_modules node_modules
 COPY . .
 
+# Public build-time variables from Dokploy Build Arguments.
+# Runtime-only secrets should stay in Dokploy Environment Variables.
+ARG VITE_APP_URL
+ENV VITE_APP_URL=${VITE_APP_URL}
+
 # build
 RUN bun run build
 
