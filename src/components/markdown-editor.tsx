@@ -1,16 +1,8 @@
-import { useDeferredValue, useEffect, useRef, useState } from 'react'
-import { cjk } from '@streamdown/cjk'
-import { code } from '@streamdown/code'
-import { math } from '@streamdown/math'
-import { mermaid } from '@streamdown/mermaid'
-import 'katex/dist/katex.min.css'
-import { EyeIcon, PencilIcon, SplitIcon } from 'lucide-react'
-import { Streamdown } from 'streamdown'
-import type { ComponentProps, ComponentType } from 'react'
+import { useEffect, useRef } from 'react'
+import type { ComponentProps } from 'react'
 
 import type { MarkdownMenuAction } from '#/components/markdown-menu-bar'
 import { MarkdownMenuBar } from '#/components/markdown-menu-bar'
-import { Button } from '#/components/ui/button'
 import { Textarea } from '#/components/ui/textarea'
 import { cn } from '#/lib/utils'
 
@@ -27,25 +19,6 @@ type EditorTransformResult = {
   selectionEnd: number
   selectionStart: number
 }
-
-type EditorMode = 'write' | 'split' | 'preview'
-
-const streamdownPlugins = {
-  cjk,
-  code,
-  math,
-  mermaid,
-}
-
-const modeOptions: Array<{
-  icon: ComponentType<{ className?: string }>
-  label: string
-  value: EditorMode
-}> = [
-  { value: 'write', label: 'Write', icon: PencilIcon },
-  { value: 'split', label: 'Split', icon: SplitIcon },
-  { value: 'preview', label: 'Preview', icon: EyeIcon },
-]
 
 const orderedListPattern = /^\d+\.\s/
 
@@ -409,11 +382,9 @@ export const MarkdownEditor = ({
   value = '',
   ...props
 }: MarkdownEditorProps) => {
-  const [mode, setMode] = useState<EditorMode>('split')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const pendingSelectionRef = useRef<{ end: number; start: number } | null>(null)
   const editorValue = typeof value === 'string' ? value : ''
-  const deferredValue = useDeferredValue(editorValue)
   const wordCount = editorValue.trim() ? editorValue.trim().split(/\s+/).length : 0
 
   const restoreSelection = () => {
@@ -435,12 +406,6 @@ export const MarkdownEditor = ({
   useEffect(() => {
     restoreSelection()
   }, [editorValue])
-
-  useEffect(() => {
-    if (mode !== 'preview') {
-      textareaRef.current?.focus()
-    }
-  }, [mode])
 
   const commitTransform = (result: EditorTransformResult | null) => {
     const textarea = textareaRef.current
@@ -541,66 +506,21 @@ export const MarkdownEditor = ({
 
   return (
     <div className="overflow-hidden border">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b bg-muted/20 px-3 py-2">
-        <MarkdownMenuBar
-          disabled={disabled === true || mode === 'preview'}
-          onAction={handleAction}
-        />
-
-        <div className="flex items-center border">
-          {modeOptions.map(({ icon: Icon, label, value: nextMode }) => (
-            <Button
-              key={nextMode}
-              type="button"
-              variant={mode === nextMode ? 'secondary' : 'ghost'}
-              size="xs"
-              className="rounded-none border-0"
-              onClick={() => setMode(nextMode)}
-            >
-              <Icon className="size-3.5" />
-              {label}
-            </Button>
-          ))}
-        </div>
+      <div className="border-b bg-muted/20 px-3 py-2">
+        <MarkdownMenuBar disabled={disabled === true} onAction={handleAction} />
       </div>
 
-      <div className={cn('grid min-h-[50vh]', mode === 'split' && 'lg:grid-cols-2')}>
-        {mode !== 'preview' && (
-          <div className={cn(mode === 'split' && 'border-b lg:border-r lg:border-b-0')}>
-            <Textarea
-              ref={textareaRef}
-              value={editorValue}
-              disabled={disabled}
-              onKeyDown={handleKeyDownInternal}
-              className={cn(
-                'min-h-[50vh] resize-none border-0 bg-transparent! px-4 py-4 text-sm! leading-7 tracking-tight shadow-none ring-0!',
-                className
-              )}
-              {...props}
-            />
-          </div>
+      <Textarea
+        ref={textareaRef}
+        value={editorValue}
+        disabled={disabled}
+        onKeyDown={handleKeyDownInternal}
+        className={cn(
+          'min-h-[50vh] resize-none border-0 bg-transparent! px-4 py-4 text-sm! leading-7 tracking-tight shadow-none ring-0!',
+          className
         )}
-
-        {mode !== 'write' && (
-          <div className="min-h-[50vh] bg-muted/10 px-4 py-4">
-            {deferredValue.trim() ? (
-              <Streamdown
-                plugins={streamdownPlugins}
-                className="h-full max-w-none text-sm leading-7"
-              >
-                {deferredValue}
-              </Streamdown>
-            ) : (
-              <div className="flex h-full min-h-[50vh] items-center justify-center border border-dashed text-center">
-                <p className="max-w-sm text-xs leading-6 text-muted-foreground">
-                  Markdown preview will appear here as you write. Use the toolbar
-                  or shortcuts like Cmd/Ctrl+B, Cmd/Ctrl+I, and Cmd/Ctrl+K.
-                </p>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+        {...props}
+      />
 
       <div className="flex flex-wrap items-center justify-between gap-2 border-t bg-muted/20 px-4 py-2 text-[11px] text-muted-foreground">
         <p>Supports headings, lists, links, images, quotes, and fenced code blocks.</p>
