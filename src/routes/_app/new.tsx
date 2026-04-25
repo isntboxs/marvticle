@@ -8,11 +8,11 @@ import {
 } from '@tanstack/react-router'
 import { toast } from 'sonner'
 
+import { MarkdownEditor } from '#/components/markdown-editor'
 import { Button } from '#/components/ui/button'
 import { Card, CardContent } from '#/components/ui/card'
 import {
   Field,
-  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
@@ -129,16 +129,17 @@ function RouteComponent() {
 
                   return (
                     <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>Title</FieldLabel>
-                      <Input
+                      <Textarea
                         id={field.name}
                         name={field.name}
                         value={field.state.value}
                         onBlur={field.handleBlur}
                         onChange={(e) => field.handleChange(e.target.value)}
                         aria-invalid={isInvalid}
-                        placeholder="Masukkan judul post"
+                        placeholder="New post title here..."
                         autoComplete="off"
+                        maxLength={180}
+                        className="resize-none border-none bg-transparent! px-0 text-4xl! font-semibold tracking-tight shadow-none ring-0!"
                       />
                       {isInvalid && (
                         <FieldError errors={field.state.meta.errors} />
@@ -186,24 +187,18 @@ function RouteComponent() {
 
                   return (
                     <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>Content</FieldLabel>
-                      <Textarea
+                      <MarkdownEditor
                         id={field.name}
                         name={field.name}
                         value={field.state.value}
                         onBlur={field.handleBlur}
                         onChange={(e) => field.handleChange(e.target.value)}
                         aria-invalid={isInvalid}
-                        placeholder="Tulis isi post di sini..."
-                        className="min-h-72"
+                        placeholder="Write your content here..."
                       />
-                      <FieldDescription>
-                        Plain text dulu. Rich markdown rendering belum tersedia
-                        di detail post.
-                      </FieldDescription>
-                      {isInvalid ? (
+                      {isInvalid && (
                         <FieldError errors={field.state.meta.errors} />
-                      ) : null}
+                      )}
                     </Field>
                   )
                 }}

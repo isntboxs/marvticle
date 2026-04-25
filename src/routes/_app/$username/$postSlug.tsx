@@ -9,7 +9,7 @@ import { formatDate, formatDistanceToNowStrict } from 'date-fns'
 import 'katex/dist/katex.min.css'
 import { EyeIcon, ShareIcon } from 'lucide-react'
 import { Streamdown } from 'streamdown'
-import { Activity, useState } from 'react'
+import { useState } from 'react'
 
 import { AspectRatio } from '#/components/ui/aspect-ratio'
 import { Separator } from '#/components/ui/separator'
@@ -20,19 +20,19 @@ import { Button } from '#/components/ui/button'
 import { PostShareDialog } from '#/components/post-share-dialog'
 
 export const Route = createFileRoute('/_app/$username/$postSlug')({
-  // head: ({ loaderData }) => ({
-  //   meta: [
-  //     {
-  //       title: `${loaderData?.title} | marvticle`,
-  //     },
-  //   ],
-  // }),
-  pendingComponent: PostDetailPending,
   loader: async ({ context: { queryClient }, params }) => {
     return queryClient.ensureQueryData(
       postDetailQueryOptions(params.username, params.postSlug)
     )
   },
+  head: ({ loaderData }) => ({
+    meta: [
+      {
+        title: `${loaderData?.title} | marvticle`,
+      },
+    ],
+  }),
+  pendingComponent: PostDetailPending,
   component: RouteComponent,
 })
 
@@ -45,7 +45,7 @@ function RouteComponent() {
     postDetailQueryOptions(username, postSlug)
   )
 
-  const authorUsername = post.author.username ?? username
+  const authorUsername = post.author.username
 
   const handleShareClick = () => {
     setOpenShareDialog((prev) => !prev)
@@ -60,17 +60,15 @@ function RouteComponent() {
         authorUsername={authorUsername}
       />
       <article className="flex flex-col">
-        <Activity mode={post.coverImageUrl ? 'visible' : 'hidden'}>
-          {post.coverImageUrl && (
-            <AspectRatio ratio={2.38 / 1} className="overflow-hidden border">
-              <img
-                src={post.coverImageUrl}
-                alt={post.title}
-                className="h-full w-full object-cover"
-              />
-            </AspectRatio>
-          )}
-        </Activity>
+        {post.coverImage && (
+          <AspectRatio ratio={2.38 / 1} className="overflow-hidden border">
+            <img
+              src={post.coverImage}
+              alt={post.title}
+              className="h-full w-full object-cover"
+            />
+          </AspectRatio>
+        )}
 
         <header className="my-6 flex flex-col gap-6 px-6">
           <div className="flex items-center gap-3">
