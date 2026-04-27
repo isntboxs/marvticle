@@ -1,6 +1,7 @@
 import { v4 as uuidV4 } from 'uuid'
 
 import { FOLDER_NAMES } from '#/schemas/file-upload.schema'
+import { env } from '#/lib/env/server'
 
 type AllowedImageMimeType =
   | 'image/gif'
@@ -21,7 +22,7 @@ const getBucketPublicUrlBase = (): string => {
   const publicUrl =
     typeof window !== 'undefined'
       ? import.meta.env.VITE_BUCKET_PUBLIC_URL
-      : process.env.VITE_BUCKET_PUBLIC_URL
+      : env.VITE_BUCKET_PUBLIC_URL
 
   return publicUrl.replace(/\/+$/, '')
 }
@@ -33,9 +34,12 @@ const getFileExtension = ({
   contentType: AllowedImageMimeType
   fileName: string
 }): string => {
-  const extensionFromName = fileName
-    .includes('.')
-    ? fileName.split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g, '')
+  const extensionFromName = fileName.includes('.')
+    ? fileName
+        .split('.')
+        .pop()
+        ?.toLowerCase()
+        .replace(/[^a-z0-9]/g, '')
     : undefined
 
   if (extensionFromName) {
@@ -49,16 +53,18 @@ export function generateFileKey({
   contentType,
   folder,
   fileName,
+  userId,
 }: {
   contentType: AllowedImageMimeType
   folder: (typeof FOLDER_NAMES)[number]
   fileName: string
+  userId: string
 }): string {
   const fileExtension = getFileExtension({ contentType, fileName })
   const uuid = uuidV4()
   const timestamp = Date.now()
 
-  return `${folder}/${uuid}_${timestamp}.${fileExtension}`
+  return `${folder}/${userId}/${uuid}_${timestamp}.${fileExtension}`
 }
 
 export const getPublicUrl = (fileKey: string): string => {
@@ -105,4 +111,17 @@ export const isManagedFileKey = (fileKey: string): boolean => {
     !fileKey.includes('..') &&
     FOLDER_NAMES.some((folder) => fileKey.startsWith(`${folder}/`))
   )
+}
+
+export const extractUserIdFromFileKey = (fileKey: string): string | null => {
+  // Pattern: {folder}/{userId}/{uuid}_{timestamp}.{ext}
+  for (const folder of FOLDER_NAMES) {
+    if (fileKey.startsWith(`${folder}/`)) {
+      const parts = fileKey.slice(folder.length + 1).split('/')
+      if (parts.length >= 2 && parts[0]) {
+        return parts[0] // userId is the first segment after folder
+      }
+    }
+  }
+  return null
 }

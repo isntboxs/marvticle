@@ -12,6 +12,7 @@ import {
   fileUploadSchema,
 } from '#/schemas/file-upload.schema'
 import {
+  extractUserIdFromFileKey,
   generateFileKey,
   getPublicUrl,
   isManagedFileKey,
@@ -31,14 +32,6 @@ const isS3ObjectMissing = (error: unknown): boolean => {
     error instanceof Error &&
     (error.name === 'NotFound' || error.name === 'NoSuchKey')
   )
-}
-
-const getObjectOwnerId = (metadata?: Record<string, string>): string | null => {
-  if (!metadata) {
-    return null
-  }
-
-  return metadata.userId ?? metadata.userid ?? null
 }
 
 export const Route = createFileRoute('/api/s3/cover-image')({
@@ -77,7 +70,12 @@ export const Route = createFileRoute('/api/s3/cover-image')({
           }
 
           const { fileName, contentType, size, folder } = validatedBody.data
-          const fileKey = generateFileKey({ contentType, folder, fileName })
+          const fileKey = generateFileKey({
+            contentType,
+            folder,
+            fileName,
+            userId: auth.user.id,
+          })
 
           const command = new PutObjectCommand({
             Bucket: env.AWS_BUCKET_NAME,
@@ -85,10 +83,6 @@ export const Route = createFileRoute('/api/s3/cover-image')({
             CacheControl: 'public, max-age=31536000, immutable',
             ContentType: contentType,
             ContentLength: size,
-            Metadata: {
-              uploadedAt: new Date().toISOString(),
-              userId: auth.user.id,
-            },
           })
 
           const presignedUrl = await getSignedUrl(s3Client, command, {
@@ -156,32 +150,34 @@ export const Route = createFileRoute('/api/s3/cover-image')({
             return jsonResponse({ error: 'Invalid file key' }, 400)
           }
 
-          let existingObjectMetadata: Record<string, string> | undefined
+          // Extract owner from fileKey path: {folder}/{userId}/{uuid}_{timestamp}.{ext}
+          const ownerId = extractUserIdFromFileKey(fileKey)
 
+          if (!ownerId) {
+            return jsonResponse({ error: 'Invalid file key format' }, 400)
+          }
+
+          if (ownerId !== auth.user.id) {
+            console.error(
+              { fileKey, ownerId, requesterId: auth.user.id },
+              'Attempted to delete another user file'
+            )
+            return jsonResponse({ error: 'Forbidden' }, 403)
+          }
+
+          // Verify file exists before deleting
           try {
-            const existingObject = await s3Client.send(
+            await s3Client.send(
               new HeadObjectCommand({
                 Bucket: env.AWS_BUCKET_NAME,
                 Key: fileKey,
               })
             )
-
-            existingObjectMetadata = existingObject.Metadata
           } catch (error) {
             if (isS3ObjectMissing(error)) {
               return jsonResponse({ error: 'File not found' }, 404)
             }
-
             throw error
-          }
-
-          if (getObjectOwnerId(existingObjectMetadata) !== auth.user.id) {
-            console.error(
-              { fileKey, requesterId: auth.user.id },
-              'Attempted to delete another user file'
-            )
-
-            return jsonResponse({ error: 'Forbidden' }, 403)
           }
 
           const command = new DeleteObjectCommand({
