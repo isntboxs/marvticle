@@ -1,20 +1,36 @@
 # Marvticle — Project Tracker
 
-> Last updated: 2026-04-23
+> Last updated: 2026-04-27
 > Status: active build
 > Runtime stack: Bun + React 19 + TanStack Start + TanStack Router + TanStack Query + TanStack Form
-> App stack: Better Auth + Drizzle ORM + PostgreSQL + oRPC/OpenAPI + Tailwind CSS v4 + shadcn/ui
+> App stack: Better Auth + Drizzle ORM + PostgreSQL + oRPC/OpenAPI + Tailwind CSS v4 + shadcn/ui + Tigris Storage
 
 ## Current Snapshot
 
-- Repo ini bukan lagi scaffold blank. Fondasi app, auth, database, RPC, dan home feed awal sudah ada.
-- Routing yang aktif saat ini: `/`, `/new`, `/sign-in`, `/sign-up`, `/$username/$postSlug`, `/api/auth/$`, `/api/orpc/$`.
-- Feed home sudah render published posts via TanStack Query infinite query dengan SSR prefetch dari route loader.
-- Auth username/email + password sudah terhubung ke Better Auth, lengkap dengan halaman sign-in dan sign-up.
-- Database schema awal dan migration sudah ada untuk auth tables + posts.
-- API layer sudah punya oRPC contract/router untuk `posts.getMany`, `posts.getOneByUsernameAndSlug`, dan `posts.create`.
-- UI create post dan detail post sudah ada, tapi profile, settings, dashboard, bookmark, comments, dan edit post belum ada.
-- Deployment target belum dipilih. Project masih pakai default TanStack Start + Vite/Nitro output.
+- Repo ini bukan lagi scaffold blank. Fondasi app, auth, database, RPC, file upload, dan home feed sudah lengkap.
+- **Routing aktif**: `/` (home feed), `/new` (create post), `/sign-in`, `/sign-up`, `/$username/$postSlug` (post detail), `/api/auth/$`, `/api/orpc/$`, `/api/s3/cover-image`.
+- **Home feed**: Infinite scroll dengan TanStack Query + SSR prefetch, render published posts dengan PostFeedCard.
+- **Create post**: Full-featured markdown editor dengan live preview, cover image upload ke Tigris S3-compatible storage via presigned URLs.
+- **Post detail**: Render post content dengan markdown renderer.
+- **Auth**: Better Auth dengan username/email + password, session management, halaman sign-in/sign-up.
+- **Database**: Drizzle ORM dengan PostgreSQL, schema untuk auth tables + posts + users.
+- **File upload**: S3-compatible storage (Tigris) untuk cover images dengan ownership-based path structure (`posts/cover/{userId}/{uuid}_{timestamp}.png`).
+- **API layer**: oRPC contract/router untuk `posts.getMany`, `posts.getOneByUsernameAndSlug`, `posts.create`, `posts.update`, `posts.delete`.
+
+### Recent Changes (2026-04-27)
+
+- Fixed file deletion ownership verification menggunakan path-based approach (bukan S3 metadata, karena Tigris tidak mengembalikan metadata via HeadObject).
+- File key sekarang include userId: `posts/cover/{userId}/{uuid}_{timestamp}.{ext}`.
+
+### Not Yet Implemented
+
+- Profile page
+- Settings page
+- Dashboard
+- Bookmarks
+- Comments
+- Edit post
+- Deployment target
 
 ## Environment And Commands
 
@@ -24,6 +40,11 @@
 - [x] `BETTER_AUTH_SECRET`
 - [x] `BETTER_AUTH_URL`
 - [x] `VITE_APP_URL`
+- [x] `AWS_ACCESS_KEY_ID`
+- [x] `AWS_SECRET_ACCESS_KEY`
+- [x] `AWS_ENDPOINT_URL_S3` (Tigris: https://t3.storage.dev)
+- [x] `AWS_BUCKET_NAME`
+- [x] `VITE_BUCKET_PUBLIC_URL`
 
 ### Core commands
 

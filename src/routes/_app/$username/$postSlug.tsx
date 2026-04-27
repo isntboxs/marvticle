@@ -18,6 +18,7 @@ import { UserAvatar } from '#/components/user-avatar'
 import { postDetailQueryOptions } from '#/hooks/use-post-detail'
 import { Button } from '#/components/ui/button'
 import { PostShareDialog } from '#/components/post-share-dialog'
+import { getStorageUrl } from '#/utils/storage'
 
 export const Route = createFileRoute('/_app/$username/$postSlug')({
   loader: async ({ context: { queryClient }, params }) => {
@@ -65,7 +66,7 @@ function RouteComponent() {
         {post.coverImage && (
           <AspectRatio ratio={2.38 / 1} className="overflow-hidden border">
             <img
-              src={post.coverImage}
+              src={getStorageUrl(post.coverImage)}
               alt={post.title}
               className="h-full w-full object-cover"
             />

@@ -15,6 +15,7 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AuthSignUpRouteImport } from './routes/_auth/sign-up'
 import { Route as AuthSignInRouteImport } from './routes/_auth/sign-in'
+import { Route as ApiS3CoverImageRouteImport } from './routes/api/s3.cover-image'
 import { Route as ApiOrpcSplatRouteImport } from './routes/api/orpc.$'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth.$'
 import { Route as AppUsernamePostSlugRouteImport } from './routes/_app/$username/$postSlug'
@@ -47,6 +48,11 @@ const AuthSignInRoute = AuthSignInRouteImport.update({
   path: '/sign-in',
   getParentRoute: () => AuthRoute,
 } as any)
+const ApiS3CoverImageRoute = ApiS3CoverImageRouteImport.update({
+  id: '/api/s3/cover-image',
+  path: '/api/s3/cover-image',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiOrpcSplatRoute = ApiOrpcSplatRouteImport.update({
   id: '/api/orpc/$',
   path: '/api/orpc/$',
@@ -71,6 +77,7 @@ export interface FileRoutesByFullPath {
   '/$username/$postSlug': typeof AppUsernamePostSlugRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/orpc/$': typeof ApiOrpcSplatRoute
+  '/api/s3/cover-image': typeof ApiS3CoverImageRoute
 }
 export interface FileRoutesByTo {
   '/': typeof AppIndexRoute
@@ -80,6 +87,7 @@ export interface FileRoutesByTo {
   '/$username/$postSlug': typeof AppUsernamePostSlugRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/orpc/$': typeof ApiOrpcSplatRoute
+  '/api/s3/cover-image': typeof ApiS3CoverImageRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -92,6 +100,7 @@ export interface FileRoutesById {
   '/_app/$username/$postSlug': typeof AppUsernamePostSlugRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/orpc/$': typeof ApiOrpcSplatRoute
+  '/api/s3/cover-image': typeof ApiS3CoverImageRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -103,6 +112,7 @@ export interface FileRouteTypes {
     | '/$username/$postSlug'
     | '/api/auth/$'
     | '/api/orpc/$'
+    | '/api/s3/cover-image'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -112,6 +122,7 @@ export interface FileRouteTypes {
     | '/$username/$postSlug'
     | '/api/auth/$'
     | '/api/orpc/$'
+    | '/api/s3/cover-image'
   id:
     | '__root__'
     | '/_app'
@@ -123,6 +134,7 @@ export interface FileRouteTypes {
     | '/_app/$username/$postSlug'
     | '/api/auth/$'
     | '/api/orpc/$'
+    | '/api/s3/cover-image'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -131,6 +143,7 @@ export interface RootRouteChildren {
   NewRoute: typeof NewRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiOrpcSplatRoute: typeof ApiOrpcSplatRoute
+  ApiS3CoverImageRoute: typeof ApiS3CoverImageRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -176,6 +189,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/sign-in'
       preLoaderRoute: typeof AuthSignInRouteImport
       parentRoute: typeof AuthRoute
+    }
+    '/api/s3/cover-image': {
+      id: '/api/s3/cover-image'
+      path: '/api/s3/cover-image'
+      fullPath: '/api/s3/cover-image'
+      preLoaderRoute: typeof ApiS3CoverImageRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/orpc/$': {
       id: '/api/orpc/$'
@@ -231,6 +251,7 @@ const rootRouteChildren: RootRouteChildren = {
   NewRoute: NewRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiOrpcSplatRoute: ApiOrpcSplatRoute,
+  ApiS3CoverImageRoute: ApiS3CoverImageRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
