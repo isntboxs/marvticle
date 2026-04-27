@@ -29,38 +29,22 @@ const getBucketPublicUrlBase = (): string => {
 
 const getFileExtension = ({
   contentType,
-  fileName,
 }: {
   contentType: AllowedImageMimeType
-  fileName: string
 }): string => {
-  const extensionFromName = fileName.includes('.')
-    ? fileName
-        .split('.')
-        .pop()
-        ?.toLowerCase()
-        .replace(/[^a-z0-9]/g, '')
-    : undefined
-
-  if (extensionFromName) {
-    return extensionFromName
-  }
-
   return MIME_TYPE_EXTENSION_MAP[contentType]
 }
 
 export function generateFileKey({
   contentType,
   folder,
-  fileName,
   userId,
 }: {
   contentType: AllowedImageMimeType
   folder: (typeof FOLDER_NAMES)[number]
-  fileName: string
   userId: string
 }): string {
-  const fileExtension = getFileExtension({ contentType, fileName })
+  const fileExtension = getFileExtension({ contentType })
   const uuid = uuidV4()
   const timestamp = Date.now()
 

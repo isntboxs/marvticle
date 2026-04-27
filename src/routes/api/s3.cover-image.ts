@@ -47,6 +47,14 @@ export const Route = createFileRoute('/api/s3/cover-image')({
           'Request received'
         )
 
+        let body: unknown
+        try {
+          body = await request.json()
+        } catch (error) {
+          console.error({ error }, 'Failed to parse request body')
+          return jsonResponse({ error: 'Invalid request body' }, 400)
+        }
+
         try {
           const { auth } = context
 
@@ -56,8 +64,6 @@ export const Route = createFileRoute('/api/s3/cover-image')({
             return jsonResponse({ error: 'Unauthorized' }, 401)
           }
 
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-          const body = await request.json()
           const validatedBody = fileUploadSchema.safeParse(body)
 
           if (!validatedBody.success) {
@@ -69,11 +75,10 @@ export const Route = createFileRoute('/api/s3/cover-image')({
             return jsonResponse({ error: 'Invalid file upload request' }, 400)
           }
 
-          const { fileName, contentType, size, folder } = validatedBody.data
+          const { contentType, size, folder } = validatedBody.data
           const fileKey = generateFileKey({
             contentType,
             folder,
-            fileName,
             userId: auth.user.id,
           })
 
@@ -96,7 +101,7 @@ export const Route = createFileRoute('/api/s3/cover-image')({
           }
 
           console.info(
-            { response },
+            { fileKey, publicUrl: response.publicUrl },
             'File upload request processed successfully'
           )
 
@@ -122,6 +127,14 @@ export const Route = createFileRoute('/api/s3/cover-image')({
           'Request received'
         )
 
+        let body: unknown
+        try {
+          body = await request.json()
+        } catch (error) {
+          console.error({ error }, 'Failed to parse request body')
+          return jsonResponse({ error: 'Invalid request body' }, 400)
+        }
+
         try {
           const { auth } = context
 
@@ -131,8 +144,6 @@ export const Route = createFileRoute('/api/s3/cover-image')({
             return jsonResponse({ error: 'Unauthorized' }, 401)
           }
 
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-          const body = await request.json()
           const validatedBody = fileDeleteSchema.safeParse(body)
 
           if (!validatedBody.success) {

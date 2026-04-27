@@ -21,7 +21,7 @@ export const fileUploadSchema = z.object({
   contentType: z.enum(ALLOWED_IMAGE_MIME_TYPES),
   size: z.coerce
     .number()
-    .nonnegative({ error: 'Size is required' })
+    .positive({ error: 'Size must be greater than 0' })
     .max(IMAGE_MAX_FILE_SIZE, {
       error: `File size must be less than ${IMAGE_MAX_FILE_SIZE / 1024 / 1024}MB`,
     }),

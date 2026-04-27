@@ -109,5 +109,8 @@
       "esbuild",
       "lightningcss"
     ]
+  },
+  "overrides": {
+    "react": "^19.2.0"
   }
 }
