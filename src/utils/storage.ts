@@ -1,7 +1,6 @@
 import { v4 as uuidV4 } from 'uuid'
 
 import { FOLDER_NAMES } from '#/schemas/file-upload.schema'
-import { env } from '#/lib/env/server'
 
 type AllowedImageMimeType =
   | 'image/gif'
@@ -19,11 +18,10 @@ const MIME_TYPE_EXTENSION_MAP: Record<AllowedImageMimeType, string> = {
 }
 
 const getBucketPublicUrlBase = (): string => {
-  const publicUrl =
-    typeof window !== 'undefined'
-      ? import.meta.env.VITE_BUCKET_PUBLIC_URL
-      : env.VITE_BUCKET_PUBLIC_URL
-
+  const publicUrl = import.meta.env.VITE_BUCKET_PUBLIC_URL
+  if (!publicUrl) {
+    throw new Error('VITE_BUCKET_PUBLIC_URL is not defined')
+  }
   return publicUrl.replace(/\/+$/, '')
 }
 
@@ -87,14 +85,27 @@ export const getFileKeyFromPublicUrl = (publicUrl: string): string | null => {
     return null
   }
 
-  return decodeURIComponent(publicUrl.slice(keyPrefix.length))
+  try {
+    return decodeURIComponent(publicUrl.slice(keyPrefix.length))
+  } catch {
+    return null
+  }
 }
 
 export const isManagedFileKey = (fileKey: string): boolean => {
-  return (
-    !fileKey.includes('..') &&
-    FOLDER_NAMES.some((folder) => fileKey.startsWith(`${folder}/`))
-  )
+  if (fileKey.includes('..')) return false
+  return FOLDER_NAMES.some((folder) => {
+    if (!fileKey.startsWith(`${folder}/`)) return false
+    const rest = fileKey.slice(folder.length + 1).split('/')
+    // Expect: {userId}/{uuid}_{timestamp}.{ext}
+    return (
+      rest.length === 2 &&
+      rest[0] &&
+      rest[0].length > 0 &&
+      rest[1] &&
+      /^[^/]+\.[a-z0-9]+$/i.test(rest[1])
+    )
+  })
 }
 
 export const extractUserIdFromFileKey = (fileKey: string): string | null => {
