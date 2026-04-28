@@ -8,6 +8,13 @@
       "when": 1777038649916,
       "tag": "0000_graceful_justin_hammer",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1777367998632,
+      "tag": "0001_mysterious_kang",
+      "breakpoints": true
     }
   ]
 }

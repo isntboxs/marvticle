@@ -8,12 +8,10 @@ export const Route = createFileRoute('/_app')({
 
 function RouteComponent() {
   return (
-    <div className="flex min-h-svh w-full flex-col">
+    <div className="min-h-svh w-full">
       <AppNavbar />
 
-      <main className="container mx-auto flex w-full max-w-4xl flex-col py-20">
-        <Outlet />
-      </main>
+      <Outlet />
     </div>
   )
 }

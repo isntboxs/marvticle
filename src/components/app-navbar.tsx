@@ -36,7 +36,7 @@ export const AppNavbar = () => {
 
   return (
     <header className="fixed top-0 right-0 left-0 z-50 h-14 border-b bg-background/85 backdrop-blur-sm supports-backdrop-filter:bg-background/65">
-      <div className="container mx-auto flex h-full w-full items-center justify-between px-4 md:px-6">
+      <div className="container mx-auto flex h-full w-full max-w-348 items-center justify-between px-4 md:px-6">
         <Link to="/" viewTransition>
           <span className="text-xl font-bold tracking-tighter">Marvticle</span>
         </Link>
