@@ -1,6 +1,6 @@
 # Marvticle — Project Tracker
 
-> Last updated: 2026-04-27
+> Last updated: 2026-04-29
 > Status: active build
 > Runtime stack: Bun + React 19 + TanStack Start + TanStack Router + TanStack Query + TanStack Form
 > App stack: Better Auth + Drizzle ORM + PostgreSQL + oRPC/OpenAPI + Tailwind CSS v4 + shadcn/ui + Tigris Storage
@@ -192,6 +192,86 @@
 - [ ] Keep Better Auth secrets and DB credentials server-only.
 - [ ] Prefer extending existing oRPC contracts/routers before adding ad-hoc fetch code.
 
-## Recommended Next Move
+## Prioritized Implementation Roadmap
 
-- [ ] Implement the second authoring slice: dashboard/my-posts, draft visibility, and edit/delete controls.
+### Dependencies Analysis
+
+**Dependency Chain (harus dikerjakan berurutan):**
+
+```
+1. Dashboard/My-Posts (Foundation)
+   └── 2. Edit Post
+   └── 3. Delete Post
+   └── 4. Status Filtering (DRAFT/PUBLISHED/ARCHIVED)
+
+5. User Profile Page
+   └── 6. Settings Page (edit profile, avatar)
+
+7. Comments System
+   └── 8. Likes System (bisa parallel dengan comments)
+   └── 9. Bookmarks (bisa parallel dengan comments/likes)
+```
+
+### Urutan Pengerjaan yang Direkomendasikan
+
+#### Phase 1: Dashboard & Author Workflow (Wajib Pertama)
+
+**Kenapa harus ini dulu:**
+
+- User sudah bisa create post, tapi tidak ada tempat untuk melihat/mengelola post mereka
+- Edit dan Delete post butuh UI entry point (dari dashboard)
+- Draft posts sudah ada di DB tapi tidak ada UI untuk mengaksesnya
+
+**Fitur yang harus dikerjakan (urutan dalam phase ini):**
+
+1. **Dashboard/My-Posts Page** - halaman daftar semua post milik user yang login
+2. **Edit Post endpoint + route** - `/posts/$postId/edit` atau `/$username/$postSlug/edit`
+3. **Delete Post endpoint + confirmation flow** - dengan modal konfirmasi
+4. **Status Filtering** - tab/filter untuk DRAFT, PUBLISHED, ARCHIVED di dashboard
+
+#### Phase 2: Profile & Settings (Bisa Parallel dengan Phase 1 bagian akhir)
+
+**Kenapa setelah/bareng dashboard:**
+
+- Username sudah required untuk create post, tapi belum ada halaman profil
+- Navbar dropdown sudah ada menu Profile/Settings tapi masih placeholder
+- Independent dari post management, bisa dikerjakan bareng akhir Phase 1
+
+**Fitur:** 5. **User Profile Page** - `/$username` - menampilkan semua post public milik user tersebut 6. **Settings Page** - `/settings` - edit profile, upload avatar, ganti password
+
+#### Phase 3: Engagement Features (Terakhir)
+
+**Kenapa terakhir:**
+
+- Butuh user profile yang stabil dulu (siapa yang like/comment)
+- Butuh post management yang lengkap dulu
+- Ini fitur "nice to have" setelah core authoring flow lengkap
+
+**Fitur (bisa parallel semua):** 7. **Comments** - schema, API, UI di post detail 8. **Likes** - schema, API, tombol like di feed dan detail 9. **Bookmarks** - schema, API, halaman reading list
+
+### Critical Dependencies yang Harus Diperhatikan
+
+| Fitur            | Bergantung Pada           | Alasan                                 |
+| ---------------- | ------------------------- | -------------------------------------- |
+| Edit Post        | Dashboard                 | Butuh entry point untuk edit           |
+| Delete Post      | Dashboard                 | Butuh entry point untuk delete         |
+| Status Filtering | Dashboard                 | Butuh halaman untuk menampilkan filter |
+| Draft Access     | Dashboard + Status Filter | Draft tidak muncul di public feed      |
+| Settings         | Auth Session              | Butuh data user yang login             |
+| Profile Page     | Username field            | URL struktur pakai `/$username`        |
+| Comments         | Auth + Profile            | Butuh identitas user yang comment      |
+| Likes            | Auth                      | Butuh user yang like                   |
+| Bookmarks        | Auth + Profile            | Butuh user yang bookmark               |
+
+### Recommended Next Move (Updated)
+
+**Mulai dari:** Implement Dashboard/My-Posts page - ini akan unlock Edit dan Delete post.
+
+**Urutan eksekusi konkret:**
+
+1. Dashboard page (`/dashboard` atau `/$username/dashboard`)
+2. Edit post route + endpoint
+3. Delete post flow
+4. Status filter di dashboard (draft/published/archived)
+5. Profile page + Settings page (bisa parallel)
+6. Comments → Likes → Bookmarks

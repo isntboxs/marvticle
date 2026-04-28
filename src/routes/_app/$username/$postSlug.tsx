@@ -3,7 +3,7 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 import { formatDate, formatDistanceToNowStrict } from 'date-fns'
 import { EyeIcon, ShareIcon } from 'lucide-react'
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import type { ReactNode } from 'react'
 
 import type { RouterOutputs } from '#/orpc/routers'
@@ -25,19 +25,20 @@ import { getStorageUrl } from '#/utils/storage'
 
 export const Route = createFileRoute('/_app/$username/$postSlug')({
   loader: async ({ context: { queryClient }, params }) => {
-    const post = await queryClient.ensureQueryData(
-      postDetailQueryOptions(params.username, params.postSlug)
-    )
+    const [post, author] = await Promise.all([
+      queryClient.ensureQueryData(
+        postDetailQueryOptions(params.username, params.postSlug)
+      ),
+      queryClient.ensureQueryData(authorProfileQueryOptions(params.username)),
+    ])
 
-    await queryClient.prefetchQuery(authorProfileQueryOptions(params.username))
-
-    return post
+    return { post, author }
   },
   head: ({ loaderData }) => ({
     meta: [
       {
         title: loaderData
-          ? `${loaderData.title} | marvticle`
+          ? `${loaderData.post.title} | marvticle`
           : 'Post not found | marvticle',
       },
     ],
@@ -73,11 +74,12 @@ function RouteComponent() {
         />
       }
       rightAside={
-        <AuthorRelatedPostsSidebar
-          authorProfile={authorQuery.data}
-          fallbackAuthor={post.author}
-          isPending={authorQuery.isPending}
-        />
+        <Suspense fallback={<AuthorCardSkeleton />}>
+          <AuthorRelatedPostsSidebar
+            authorProfile={authorQuery.data}
+            fallbackAuthor={post.author}
+          />
+        </Suspense>
       }
     >
       <main className="w-full min-w-0">
@@ -296,21 +298,14 @@ const EngagementActions = ({
 function AuthorRelatedPostsSidebar({
   authorProfile,
   fallbackAuthor,
-  isPending,
 }: Readonly<{
   authorProfile?: RouterOutputs['users']['getAuthorByUsername']
   fallbackAuthor: RouterOutputs['posts']['getMany']['items'][number]['author']
-  isPending: boolean
 }>) {
   return (
     <div className="grid grid-cols-1 gap-y-16">
-      {isPending && !authorProfile ? <AuthorCardSkeleton /> : null}
-      {!isPending && authorProfile ? (
-        <AuthorCard author={authorProfile} />
-      ) : null}
-      {!isPending && !authorProfile ? (
-        <AuthorCardFallback author={fallbackAuthor} />
-      ) : null}
+      {authorProfile ? <AuthorCard author={authorProfile} /> : null}
+      {!authorProfile ? <AuthorCardFallback author={fallbackAuthor} /> : null}
 
       {/* More from this author Card */}
     </div>
