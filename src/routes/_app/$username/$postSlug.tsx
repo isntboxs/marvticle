@@ -2,40 +2,36 @@ import { ChatCircleIcon, ThumbsUpIcon } from '@phosphor-icons/react'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 import { formatDate, formatDistanceToNowStrict } from 'date-fns'
-import {
-  BadgeCheckIcon,
-  Building2Icon,
-  CalendarIcon,
-  EyeIcon,
-  MapPinIcon,
-  School2Icon,
-  ShareIcon,
-} from 'lucide-react'
+import { EyeIcon, ShareIcon } from 'lucide-react'
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 
-import { GeneratedBanner } from '#/components/generated-banner'
+import type { RouterOutputs } from '#/orpc/routers'
+import {
+  AuthorCard,
+  AuthorCardFallback,
+  AuthorCardSkeleton,
+} from '#/components/author-card'
 import { MarkdownRenderer } from '#/components/markdown-renderer'
 import { PostShareDialog } from '#/components/post-share-dialog'
 import { AspectRatio } from '#/components/ui/aspect-ratio'
 import { Button } from '#/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-} from '#/components/ui/card'
 import { Separator } from '#/components/ui/separator'
 import { Skeleton } from '#/components/ui/skeleton'
 import { UserAvatar } from '#/components/user-avatar'
+import { authorProfileQueryOptions } from '#/hooks/use-author-profile'
 import { postDetailQueryOptions } from '#/hooks/use-post-detail'
 import { getStorageUrl } from '#/utils/storage'
 
 export const Route = createFileRoute('/_app/$username/$postSlug')({
   loader: async ({ context: { queryClient }, params }) => {
-    return queryClient.ensureQueryData(
+    const post = await queryClient.ensureQueryData(
       postDetailQueryOptions(params.username, params.postSlug)
     )
+
+    await queryClient.prefetchQuery(authorProfileQueryOptions(params.username))
+
+    return post
   },
   head: ({ loaderData }) => ({
     meta: [
@@ -58,6 +54,7 @@ function RouteComponent() {
   const { data: post } = useSuspenseQuery(
     postDetailQueryOptions(username, postSlug)
   )
+  const authorQuery = useSuspenseQuery(authorProfileQueryOptions(username))
 
   const authorUsername = post.author.username
 
@@ -75,7 +72,13 @@ function RouteComponent() {
           onShare={handleShareClick}
         />
       }
-      rightAside={<RelatedPostsSidebar />}
+      rightAside={
+        <AuthorRelatedPostsSidebar
+          authorProfile={authorQuery.data}
+          fallbackAuthor={post.author}
+          isPending={authorQuery.isPending}
+        />
+      }
     >
       <main className="w-full min-w-0">
         <PostShareDialog
@@ -150,8 +153,8 @@ function RouteComponent() {
 function PostDetailPending() {
   return (
     <PostDetailLayout
-      leftAside={<RelatedPostsSidebar />}
-      rightAside={<RelatedPostsSidebar />}
+      leftAside={<EngagementActionsSkeleton />}
+      rightAside={<AuthorCardSkeleton />}
     >
       <article className="flex min-w-0 flex-col">
         <Skeleton className="aspect-[2.38/1] w-full" />
@@ -192,6 +195,29 @@ function PostDetailPending() {
         </div>
       </article>
     </PostDetailLayout>
+  )
+}
+
+function EngagementActionsSkeleton() {
+  return (
+    <div className="flex h-72 flex-col items-center gap-y-4 overflow-hidden">
+      <div className="flex flex-col items-center gap-1">
+        <Skeleton className="size-11" />
+        <Skeleton className="h-3 w-6" />
+      </div>
+
+      <div className="flex flex-col items-center gap-1">
+        <Skeleton className="size-11" />
+        <Skeleton className="h-3 w-6" />
+      </div>
+
+      <div className="flex flex-col items-center gap-1">
+        <Skeleton className="size-7" />
+        <Skeleton className="h-3 w-6" />
+      </div>
+
+      <Skeleton className="mt-auto size-11" />
+    </div>
   )
 }
 
@@ -261,93 +287,24 @@ const EngagementActions = ({
   )
 }
 
-function RelatedPostsSidebar() {
-  const banner: string | null =
-    'https://i.pinimg.com/originals/dc/3e/cd/dc3ecdab0fa15f3bd29d1e20718648e6.gif'
-  const avatar: string | null =
-    'https://i.pinimg.com/originals/1e/28/50/1e28507cdc5bfc16e9b2c575501216b4.gif'
-
+function AuthorRelatedPostsSidebar({
+  authorProfile,
+  fallbackAuthor,
+  isPending,
+}: Readonly<{
+  authorProfile?: RouterOutputs['users']['getAuthorByUsername']
+  fallbackAuthor: RouterOutputs['posts']['getMany']['items'][number]['author']
+  isPending: boolean
+}>) {
   return (
     <div className="grid grid-cols-1 gap-y-16">
-      <Card className="relative overflow-hidden py-0">
-        <AspectRatio ratio={17 / 6}>
-          {banner ? (
-            <img
-              src={banner}
-              alt="Banner"
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <GeneratedBanner seed="isntboxs" />
-          )}
-        </AspectRatio>
-
-        <CardHeader className="relative">
-          <div className="absolute -top-10 left-4 after:absolute after:inset-0 after:outline-6 after:outline-card">
-            <UserAvatar name="isntboxs" image={avatar} className="size-12" />
-          </div>
-
-          <div className="mt-6 flex items-start justify-between">
-            <div className="space-y-0.5">
-              <div className="flex items-center gap-2">
-                <span className="max-w-[20ch] truncate text-base font-semibold">
-                  Moh Wanda Kemala Rizky
-                </span>
-
-                <BadgeCheckIcon className="size-4 fill-blue-500" />
-              </div>
-
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                <span>@isntboxs</span>
-                <Separator
-                  orientation="vertical"
-                  className="rounded-full data-vertical:h-1 data-vertical:w-1 data-vertical:self-center"
-                />
-                <span>he/him</span>
-              </div>
-            </div>
-
-            <Button variant="outline" size="sm">
-              Follow
-            </Button>
-          </div>
-
-          <CardDescription className="mt-2 text-sm text-primary">
-            Just an overworked millennial. Writing code the way I make my
-            coffee: strong, clean, and with care. ☕
-          </CardDescription>
-        </CardHeader>
-
-        <CardContent className="mb-6 grid grid-cols-1 place-items-start gap-4">
-          <div className="flex items-center gap-2">
-            <MapPinIcon className="size-4" />
-            <span className="text-xs text-muted-foreground">
-              Jakarta, Indonesia
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <School2Icon className="size-4" />
-            <span className="text-xs text-muted-foreground">
-              Universitas Indonesia
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Building2Icon className="size-4" />
-            <span className="text-xs text-muted-foreground">
-              Software Engineer at PT. XYZ
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <CalendarIcon className="size-4" />
-            <span className="text-xs text-muted-foreground">
-              Joined at Jan 08, 2020
-            </span>
-          </div>
-        </CardContent>
-      </Card>
+      {isPending && !authorProfile ? <AuthorCardSkeleton /> : null}
+      {!isPending && authorProfile ? (
+        <AuthorCard author={authorProfile} />
+      ) : null}
+      {!isPending && !authorProfile ? (
+        <AuthorCardFallback author={fallbackAuthor} />
+      ) : null}
 
       {/* More from this author Card */}
     </div>
