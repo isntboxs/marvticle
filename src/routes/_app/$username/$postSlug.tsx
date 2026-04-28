@@ -257,14 +257,19 @@ const EngagementActions = ({
   return (
     <div className="flex h-72 flex-col items-center gap-y-4 overflow-hidden">
       <div className="flex flex-col items-center gap-1">
-        <Button variant="ghost" size="icon-lg">
+        <Button variant="ghost" size="icon-lg" aria-label="Like post" disabled>
           <ThumbsUpIcon className="size-4" />
         </Button>
         <span className="text-xs">{likesCount}</span>
       </div>
 
       <div className="flex flex-col items-center gap-1">
-        <Button variant="ghost" size="icon-lg">
+        <Button
+          variant="ghost"
+          size="icon-lg"
+          aria-label="Open comments"
+          disabled
+        >
           <ChatCircleIcon className="size-4" />
         </Button>
         <span className="text-xs">{commentsCount}</span>
@@ -280,6 +285,7 @@ const EngagementActions = ({
         size="icon-lg"
         className="mt-auto"
         onClick={onShare}
+        aria-label="Share post"
       >
         <ShareIcon className="size-4" />
       </Button>

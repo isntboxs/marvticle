@@ -53,7 +53,7 @@ export function AuthorCard({
       </AspectRatio>
 
       <CardHeader className="relative">
-        <div className="absolute -top-10 left-4 after:absolute after:inset-0 after:outline-6 after:outline-card">
+        <div className="absolute -top-10 left-4 after:absolute after:inset-0 after:outline-6 after:outline-card after:content-['']">
           <UserAvatar
             name={author.name}
             image={author.image}
