@@ -30,7 +30,6 @@ describe('storage utilities', () => {
 
     const fileKey = generateFileKey({
       contentType: 'image/jpeg',
-      fileName: 'cover image',
       folder: 'posts/cover',
       userId: 'user-123',
     })
@@ -41,26 +40,26 @@ describe('storage utilities', () => {
   })
 
   it('builds and parses the public URL for managed uploads', () => {
-    const fileKey = 'posts/cover/example-file.jpg'
+    const fileKey = 'posts/cover/user-123/example-file.jpg'
 
     expect(getPublicUrl(fileKey)).toBe(
-      'https://cdn.example.com/uploads/posts/cover/example-file.jpg'
+      'https://cdn.example.com/uploads/posts/cover/user-123/example-file.jpg'
     )
     expect(
       getFileKeyFromPublicUrl(
-        'https://cdn.example.com/uploads/posts/cover/example-file.jpg'
+        'https://cdn.example.com/uploads/posts/cover/user-123/example-file.jpg'
       )
     ).toBe(fileKey)
   })
 
   it('resolves storage values from both keys and legacy absolute URLs', () => {
-    const fileKey = 'posts/cover/example-file.jpg'
+    const fileKey = 'posts/cover/user-123/example-file.jpg'
     const legacyUrl = 'https://cdn.example.com/uploads/posts/cover/legacy.jpg'
 
     expect(getManagedFileKey(fileKey)).toBe(fileKey)
     expect(getManagedFileKey(legacyUrl)).toBe('posts/cover/legacy.jpg')
     expect(getStorageUrl(fileKey)).toBe(
-      'https://cdn.example.com/uploads/posts/cover/example-file.jpg'
+      'https://cdn.example.com/uploads/posts/cover/user-123/example-file.jpg'
     )
     expect(getStorageUrl(legacyUrl)).toBe(legacyUrl)
   })
@@ -72,7 +71,8 @@ describe('storage utilities', () => {
       )
     ).toBeNull()
 
-    expect(isManagedFileKey('posts/cover/example-file.jpg')).toBe(true)
+    expect(isManagedFileKey('posts/cover/user-123/example-file.jpg')).toBe(true)
+    expect(isManagedFileKey('posts/cover/example-file.jpg')).toBe(false)
     expect(isManagedFileKey('../posts/cover/example-file.jpg')).toBe(false)
     expect(isManagedFileKey('unknown-folder/example-file.jpg')).toBe(false)
   })

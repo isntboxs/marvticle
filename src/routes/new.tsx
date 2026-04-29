@@ -179,7 +179,9 @@ function RouteComponent() {
                         onBlur={field.handleBlur}
                         onChange={(e) => field.handleChange(e.target.value)}
                         onKeyDown={(e) => {
-                          if (e.key === 'Enter') e.preventDefault()
+                          if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+                            e.preventDefault()
+                          }
                         }}
                         aria-invalid={isInvalid}
                         placeholder="New post title here..."

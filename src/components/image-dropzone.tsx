@@ -20,15 +20,15 @@ interface ManagedCoverFile {
   previewUrl: string
 }
 
-interface ImageDropzoneProps
-  extends Omit<HTMLAttributes<HTMLDivElement>, 'onChange'> {
+interface ImageDropzoneProps extends Omit<
+  HTMLAttributes<HTMLDivElement>,
+  'onChange'
+> {
   value?: string
   onChange?: (value: string) => void
 }
 
-const getManagedCoverFromValue = (
-  value?: string
-): ManagedCoverFile | null => {
+const getManagedCoverFromValue = (value?: string): ManagedCoverFile | null => {
   if (!value) {
     return null
   }
@@ -60,6 +60,7 @@ export const ImageDropzone = ({
   const [isDeleting, setIsDeleting] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const xhrRef = useRef<XMLHttpRequest | null>(null)
+  const prevValueRef = useRef(value)
 
   const deleteManagedFile = useCallback(async (fileKey: string) => {
     const deleteResponse = await fetch('/api/s3/cover-image', {
@@ -246,9 +247,7 @@ export const ImageDropzone = ({
     }
 
     if (errorMessage && !coverFile?.previewUrl) {
-      return (
-        <ImageDropzoneErrorState message={errorMessage} onRetry={open} />
-      )
+      return <ImageDropzoneErrorState message={errorMessage} onRetry={open} />
     }
 
     if (coverFile?.previewUrl) {
@@ -262,7 +261,9 @@ export const ImageDropzone = ({
       )
     }
 
-    return <ImageDropzoneEmptyState isDragActive={isDragActive} onSelect={open} />
+    return (
+      <ImageDropzoneEmptyState isDragActive={isDragActive} onSelect={open} />
+    )
   }
 
   const onDrop = useCallback(
@@ -353,24 +354,21 @@ export const ImageDropzone = ({
   }
 
   useEffect(() => {
-    setCoverFile((currentCoverFile) => {
-      if (
-        value === currentCoverFile?.previewUrl ||
-        (!value && !currentCoverFile)
-      ) {
-        return currentCoverFile
-      }
-
-      return getManagedCoverFromValue(value)
-    })
+    if (prevValueRef.current !== value) {
+      prevValueRef.current = value
+      setCoverFile(getManagedCoverFromValue(value))
+    }
   }, [value])
 
   useEffect(() => {
+    const currentPreviewUrl = coverFile?.previewUrl
+
     return () => {
       xhrRef.current?.abort()
-      revokeObjectUrl(coverFile?.previewUrl)
+      revokeObjectUrl(currentPreviewUrl)
     }
-  }, [coverFile?.previewUrl])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const { getInputProps, getRootProps, isDragActive, open } = useDropzone({
     onDrop,

@@ -25,9 +25,13 @@ export const ImageDropzoneEmptyState = ({
 
       <p className="text-base font-semibold text-muted-foreground">
         Drop your image here or{' '}
-        <span className="cursor-pointer font-bold text-primary">
+        <Button
+          type="button"
+          className="cursor-pointer font-bold text-primary"
+          onClick={onSelect}
+        >
           use the picker
-        </span>
+        </Button>
       </p>
 
       <p className="mt-1 text-xs text-muted-foreground">
@@ -61,9 +65,7 @@ export const ImageDropzoneErrorState = ({
 
       <p className="text-base font-semibold">Upload failed</p>
 
-      <p className="mt-1 text-xs text-muted-foreground">
-        {message}
-      </p>
+      <p className="mt-1 text-xs text-muted-foreground">{message}</p>
 
       <Button
         type="button"

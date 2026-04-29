@@ -28,7 +28,7 @@ export const authorProfileSchema = selectUserSchema.pick({
 })
 
 export const getAuthorByUsernameParamsSchema = z.object({
-  username: z.string(),
+  username: z.string().nonempty(),
 })
 
 export type AuthorProfile = z.infer<typeof authorProfileSchema>
