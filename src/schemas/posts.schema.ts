@@ -79,22 +79,22 @@ const updatePostBodyFieldsSchema = createUpdateSchema(postsTable)
   })
 
 const hasPostUpdateField = (
-  value: Partial<
-    Record<'title' | 'coverImage' | 'content' | 'status', unknown>
-  >
+  value: Partial<Record<'title' | 'coverImage' | 'content' | 'status', unknown>>
 ) => {
   return (
-    'title' in value ||
-    'coverImage' in value ||
-    'content' in value ||
-    'status' in value
+    value.title !== undefined ||
+    value.coverImage !== undefined ||
+    value.content !== undefined ||
+    value.status !== undefined
   )
 }
 
-export const updatePostBodySchema = updatePostBodyFieldsSchema
-  .refine(hasPostUpdateField, {
+export const updatePostBodySchema = updatePostBodyFieldsSchema.refine(
+  hasPostUpdateField,
+  {
     error: 'At least one field is required',
-  })
+  }
+)
 
 export const updatePostInputSchema = updatePostBodyFieldsSchema
   .extend({

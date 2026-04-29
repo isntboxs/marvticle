@@ -160,14 +160,12 @@ const getEditableByUsernameAndSlugHandler = orpcBase
   .posts.getEditableByUsernameAndSlug.handler(
     async ({ context, input, errors }) => {
       const [row] = await context.db
-        .select({
-          ...createdPostSelect,
-          authorId: postsTable.authorId,
-        })
+        .select(createdPostSelect)
         .from(postsTable)
         .innerJoin(userTable, eq(postsTable.authorId, userTable.id))
         .where(
           and(
+            eq(userTable.id, context.auth.user.id),
             eq(userTable.username, input.username),
             eq(postsTable.slug, input.slug)
           )
@@ -177,12 +175,6 @@ const getEditableByUsernameAndSlugHandler = orpcBase
       if (!row) {
         throw errors.NOT_FOUND({
           message: `Post @${input.username}/${input.slug} not found.`,
-        })
-      }
-
-      if (row.authorId !== context.auth.user.id) {
-        throw errors.FORBIDDEN({
-          message: 'You can only edit your own posts.',
         })
       }
 
