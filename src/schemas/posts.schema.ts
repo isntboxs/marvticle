@@ -1,7 +1,11 @@
 import { z } from 'zod'
 
 import { authorSchema } from '#/schemas/users.schema'
-import { createInsertSchema, createSelectSchema } from '#/schemas/drizzle-zod'
+import {
+  createInsertSchema,
+  createSelectSchema,
+  createUpdateSchema,
+} from '#/schemas/drizzle-zod'
 import { postsTable } from '#/db/schemas'
 import { isManagedFileKey } from '#/utils/storage'
 
@@ -46,10 +50,63 @@ export const createPostBodySchema = insertPostSchema
       }),
     ]),
     content: z.string().trim().min(1, { error: 'Content is required' }),
-    status: z.literal('PUBLISHED'),
+    status: z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']),
+  })
+
+const updatePostBodyFieldsSchema = createUpdateSchema(postsTable)
+  .pick({
+    title: true,
+    coverImage: true,
+    content: true,
+    status: true,
+  })
+  .extend({
+    title: z.string().trim().min(1, { error: 'Title is required' }).optional(),
+    coverImage: z
+      .union([
+        z.literal(''),
+        z.string().refine(isManagedFileKey, {
+          error: 'Cover image key is invalid',
+        }),
+      ])
+      .optional(),
+    content: z
+      .string()
+      .trim()
+      .min(1, { error: 'Content is required' })
+      .optional(),
+    status: z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']).optional(),
+  })
+
+const hasPostUpdateField = (
+  value: Partial<Record<'title' | 'coverImage' | 'content' | 'status', unknown>>
+) => {
+  return (
+    value.title !== undefined ||
+    value.coverImage !== undefined ||
+    value.content !== undefined ||
+    value.status !== undefined
+  )
+}
+
+export const updatePostBodySchema = updatePostBodyFieldsSchema.refine(
+  hasPostUpdateField,
+  {
+    error: 'At least one field is required',
+  }
+)
+
+export const updatePostInputSchema = updatePostBodyFieldsSchema
+  .extend({
+    id: z.uuid(),
+  })
+  .refine(hasPostUpdateField, {
+    error: 'At least one field is required',
   })
 
 export type CreatePostBodyInput = z.infer<typeof createPostBodySchema>
+export type UpdatePostBodyInput = z.infer<typeof updatePostBodySchema>
+export type UpdatePostInput = z.infer<typeof updatePostInputSchema>
 
 export const getManyPostsParamsSchema = z.object({
   cursor: z.string().min(1).optional(),

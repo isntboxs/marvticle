@@ -5,6 +5,7 @@ import {
   getOnePostByUsernameAndSlugParamsSchema,
   postSchema,
   postsPageSchema,
+  updatePostInputSchema,
 } from '#/schemas/posts.schema'
 
 const getManyPostsContract = base
@@ -37,6 +38,21 @@ const getOneByUsernameAndSlugContract = base
   .input(getOnePostByUsernameAndSlugParamsSchema)
   .output(postSchema)
 
+const getEditableByUsernameAndSlugContract = base
+  .route({
+    path: '/posts/{username}/{slug}/edit',
+    method: 'GET',
+    summary: 'Get editable post by username and slug',
+    description:
+      'Retrieve a post owned by the authenticated author for editing.',
+    tags: ['Posts'],
+    operationId: 'getEditablePostByUsernameAndSlug',
+    successStatus: 200,
+    successDescription: 'Editable post retrieved successfully',
+  })
+  .input(getOnePostByUsernameAndSlugParamsSchema)
+  .output(postSchema.omit({ author: true }))
+
 const createPostContract = base
   .route({
     path: '/posts',
@@ -51,8 +67,24 @@ const createPostContract = base
   .input(createPostBodySchema)
   .output(postSchema.omit({ author: true }))
 
+const updatePostContract = base
+  .route({
+    path: '/posts/{id}',
+    method: 'PATCH',
+    summary: 'Update a post',
+    description: 'Update an existing post owned by the authenticated author.',
+    tags: ['Posts'],
+    operationId: 'updatePost',
+    successStatus: 200,
+    successDescription: 'Post updated successfully',
+  })
+  .input(updatePostInputSchema)
+  .output(postSchema.omit({ author: true }))
+
 export const postsContract = {
   getMany: getManyPostsContract,
   getOneByUsernameAndSlug: getOneByUsernameAndSlugContract,
+  getEditableByUsernameAndSlug: getEditableByUsernameAndSlugContract,
   create: createPostContract,
+  update: updatePostContract,
 }

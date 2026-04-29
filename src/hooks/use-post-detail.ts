@@ -10,6 +10,18 @@ export const postDetailQueryOptions = (username: string, slug: string) =>
     },
   })
 
+export const editablePostDetailQueryOptions = (username: string, slug: string) =>
+  orpc.posts.getEditableByUsernameAndSlug.queryOptions({
+    input: {
+      username,
+      slug,
+    },
+  })
+
 export const usePostDetail = (username: string, slug: string) => {
   return useSuspenseQuery(postDetailQueryOptions(username, slug))
+}
+
+export const useEditablePostDetail = (username: string, slug: string) => {
+  return useSuspenseQuery(editablePostDetailQueryOptions(username, slug))
 }

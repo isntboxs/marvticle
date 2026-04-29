@@ -9,20 +9,21 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as NewRouteImport } from './routes/new'
+import { Route as PostFormRouteImport } from './routes/_post-form'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
+import { Route as PostFormNewRouteImport } from './routes/_post-form/new'
 import { Route as AuthSignUpRouteImport } from './routes/_auth/sign-up'
 import { Route as AuthSignInRouteImport } from './routes/_auth/sign-in'
 import { Route as ApiS3CoverImageRouteImport } from './routes/api/s3.cover-image'
 import { Route as ApiOrpcSplatRouteImport } from './routes/api/orpc.$'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth.$'
 import { Route as AppUsernamePostSlugRouteImport } from './routes/_app/$username/$postSlug'
+import { Route as PostFormUsernamePostSlugEditRouteImport } from './routes/_post-form/$username.$postSlug.edit'
 
-const NewRoute = NewRouteImport.update({
-  id: '/new',
-  path: '/new',
+const PostFormRoute = PostFormRouteImport.update({
+  id: '/_post-form',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -37,6 +38,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AppRoute,
+} as any)
+const PostFormNewRoute = PostFormNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => PostFormRoute,
 } as any)
 const AuthSignUpRoute = AuthSignUpRouteImport.update({
   id: '/sign-up',
@@ -68,79 +74,93 @@ const AppUsernamePostSlugRoute = AppUsernamePostSlugRouteImport.update({
   path: '/$username/$postSlug',
   getParentRoute: () => AppRoute,
 } as any)
+const PostFormUsernamePostSlugEditRoute =
+  PostFormUsernamePostSlugEditRouteImport.update({
+    id: '/$username/$postSlug/edit',
+    path: '/$username/$postSlug/edit',
+    getParentRoute: () => PostFormRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
-  '/new': typeof NewRoute
   '/sign-in': typeof AuthSignInRoute
   '/sign-up': typeof AuthSignUpRoute
+  '/new': typeof PostFormNewRoute
   '/$username/$postSlug': typeof AppUsernamePostSlugRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/orpc/$': typeof ApiOrpcSplatRoute
   '/api/s3/cover-image': typeof ApiS3CoverImageRoute
+  '/$username/$postSlug/edit': typeof PostFormUsernamePostSlugEditRoute
 }
 export interface FileRoutesByTo {
   '/': typeof AppIndexRoute
-  '/new': typeof NewRoute
   '/sign-in': typeof AuthSignInRoute
   '/sign-up': typeof AuthSignUpRoute
+  '/new': typeof PostFormNewRoute
   '/$username/$postSlug': typeof AppUsernamePostSlugRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/orpc/$': typeof ApiOrpcSplatRoute
   '/api/s3/cover-image': typeof ApiS3CoverImageRoute
+  '/$username/$postSlug/edit': typeof PostFormUsernamePostSlugEditRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteWithChildren
   '/_auth': typeof AuthRouteWithChildren
-  '/new': typeof NewRoute
+  '/_post-form': typeof PostFormRouteWithChildren
   '/_auth/sign-in': typeof AuthSignInRoute
   '/_auth/sign-up': typeof AuthSignUpRoute
+  '/_post-form/new': typeof PostFormNewRoute
   '/_app/': typeof AppIndexRoute
   '/_app/$username/$postSlug': typeof AppUsernamePostSlugRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/orpc/$': typeof ApiOrpcSplatRoute
   '/api/s3/cover-image': typeof ApiS3CoverImageRoute
+  '/_post-form/$username/$postSlug/edit': typeof PostFormUsernamePostSlugEditRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/new'
     | '/sign-in'
     | '/sign-up'
+    | '/new'
     | '/$username/$postSlug'
     | '/api/auth/$'
     | '/api/orpc/$'
     | '/api/s3/cover-image'
+    | '/$username/$postSlug/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/new'
     | '/sign-in'
     | '/sign-up'
+    | '/new'
     | '/$username/$postSlug'
     | '/api/auth/$'
     | '/api/orpc/$'
     | '/api/s3/cover-image'
+    | '/$username/$postSlug/edit'
   id:
     | '__root__'
     | '/_app'
     | '/_auth'
-    | '/new'
+    | '/_post-form'
     | '/_auth/sign-in'
     | '/_auth/sign-up'
+    | '/_post-form/new'
     | '/_app/'
     | '/_app/$username/$postSlug'
     | '/api/auth/$'
     | '/api/orpc/$'
     | '/api/s3/cover-image'
+    | '/_post-form/$username/$postSlug/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   AuthRoute: typeof AuthRouteWithChildren
-  NewRoute: typeof NewRoute
+  PostFormRoute: typeof PostFormRouteWithChildren
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiOrpcSplatRoute: typeof ApiOrpcSplatRoute
   ApiS3CoverImageRoute: typeof ApiS3CoverImageRoute
@@ -148,11 +168,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/new': {
-      id: '/new'
-      path: '/new'
-      fullPath: '/new'
-      preLoaderRoute: typeof NewRouteImport
+    '/_post-form': {
+      id: '/_post-form'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof PostFormRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_auth': {
@@ -175,6 +195,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/_post-form/new': {
+      id: '/_post-form/new'
+      path: '/new'
+      fullPath: '/new'
+      preLoaderRoute: typeof PostFormNewRouteImport
+      parentRoute: typeof PostFormRoute
     }
     '/_auth/sign-up': {
       id: '/_auth/sign-up'
@@ -218,6 +245,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppUsernamePostSlugRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_post-form/$username/$postSlug/edit': {
+      id: '/_post-form/$username/$postSlug/edit'
+      path: '/$username/$postSlug/edit'
+      fullPath: '/$username/$postSlug/edit'
+      preLoaderRoute: typeof PostFormUsernamePostSlugEditRouteImport
+      parentRoute: typeof PostFormRoute
+    }
   }
 }
 
@@ -245,10 +279,24 @@ const AuthRouteChildren: AuthRouteChildren = {
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
+interface PostFormRouteChildren {
+  PostFormNewRoute: typeof PostFormNewRoute
+  PostFormUsernamePostSlugEditRoute: typeof PostFormUsernamePostSlugEditRoute
+}
+
+const PostFormRouteChildren: PostFormRouteChildren = {
+  PostFormNewRoute: PostFormNewRoute,
+  PostFormUsernamePostSlugEditRoute: PostFormUsernamePostSlugEditRoute,
+}
+
+const PostFormRouteWithChildren = PostFormRoute._addFileChildren(
+  PostFormRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   AuthRoute: AuthRouteWithChildren,
-  NewRoute: NewRoute,
+  PostFormRoute: PostFormRouteWithChildren,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiOrpcSplatRoute: ApiOrpcSplatRoute,
   ApiS3CoverImageRoute: ApiS3CoverImageRoute,
