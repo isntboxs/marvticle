@@ -1,140 +1,84 @@
-import {
-  Link,
-  createFileRoute,
-  redirect,
-  useNavigate,
-} from '@tanstack/react-router'
-
-import { AppWindowIcon, PencilIcon } from '@phosphor-icons/react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { Link, createFileRoute } from '@tanstack/react-router'
 import { useForm } from '@tanstack/react-form-start'
-import { toast } from 'sonner'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '#/components/ui/tabs'
-import { orpc } from '#/orpc/client'
-import { createPostBodySchema } from '#/schemas/posts.schema'
+
+import type { UpdatePostBodyInput } from '#/schemas/posts.schema'
 import {
-  DEFAULT_POSTS_LIMIT,
-  postsInfiniteQueryOptions,
-} from '#/hooks/use-posts'
-import { Field, FieldError, FieldGroup } from '#/components/ui/field'
-import { Textarea } from '#/components/ui/textarea'
+  editablePostDetailQueryOptions,
+  useEditablePostDetail,
+} from '#/hooks/use-post-detail'
+import { useUpdatePost } from '#/hooks/use-update-post'
+import { updatePostBodySchema } from '#/schemas/posts.schema'
+import { ImageDropzone } from '#/components/image-dropzone'
 import { MarkdownEditor } from '#/components/markdown-editor'
-import { Button } from '#/components/ui/button'
-import { Spinner } from '#/components/ui/spinner'
 import { MarkdownRenderer } from '#/components/markdown-renderer'
 import { AspectRatio } from '#/components/ui/aspect-ratio'
-import { ImageDropzone } from '#/components/image-dropzone'
+import { Button } from '#/components/ui/button'
+import { Field, FieldError, FieldGroup, FieldLabel } from '#/components/ui/field'
+import { Spinner } from '#/components/ui/spinner'
+import { TabsContent } from '#/components/ui/tabs'
+import { Textarea } from '#/components/ui/textarea'
+import { ToggleGroup, ToggleGroupItem } from '#/components/ui/toggle-group'
 import { getStorageUrl } from '#/utils/storage'
 
-export const Route = createFileRoute('/new')({
-  beforeLoad: ({ context, location }) => {
-    const { auth } = context
-    if (!auth) {
-      throw redirect({
-        to: '/sign-in',
-        search: {
-          redirect: location.pathname,
-        },
-      })
-    }
+const postStatusOptions = ['PUBLISHED', 'DRAFT', 'ARCHIVED'] as const
 
-    return { auth }
+type PostStatus = (typeof postStatusOptions)[number]
+
+const isPostStatus = (value: string): value is PostStatus => {
+  return postStatusOptions.some((status) => status === value)
+}
+
+export const Route = createFileRoute('/_post-form/$username/$postSlug/edit')({
+  loader: async ({ context: { queryClient }, params }) => {
+    await queryClient.ensureQueryData(
+      editablePostDetailQueryOptions(params.username, params.postSlug)
+    )
   },
-  head: () => ({
-    meta: [
-      {
-        title: 'Create post | marvticle',
-      },
-    ],
-  }),
   component: RouteComponent,
 })
 
 function RouteComponent() {
-  const navigate = useNavigate()
-  const queryClient = useQueryClient()
-  const { auth } = Route.useRouteContext()
-  const username = auth.user.username
+  const params = Route.useParams()
+  const { queryClient, orpc } = Route.useRouteContext()
 
-  const createPostMutation = useMutation(orpc.posts.create.mutationOptions())
+  const { data: post } = useEditablePostDetail(
+    params.username,
+    params.postSlug
+  )
+
+  const updatePostMutation = useUpdatePost({
+    queryClient,
+    orpc,
+    username: params.username,
+  })
+
+  const defaultValues: UpdatePostBodyInput = {
+    title: post.title,
+    coverImage: post.coverImage ?? '',
+    content: post.content,
+    status: post.status,
+  }
 
   const form = useForm({
-    defaultValues: {
-      title: '',
-      coverImage: '',
-      content: '',
-      status: 'PUBLISHED',
-    },
+    defaultValues,
     validators: {
-      onChange: createPostBodySchema,
-      onSubmit: createPostBodySchema,
+      onChange: updatePostBodySchema,
+      onSubmit: updatePostBodySchema,
     },
     onSubmit: async ({ value }) => {
-      try {
-        const post = await createPostMutation.mutateAsync({
-          title: value.title,
-          coverImage: value.coverImage,
-          content: value.content,
-          status: 'PUBLISHED',
-        })
-
-        await queryClient.invalidateQueries({
-          queryKey: postsInfiniteQueryOptions(DEFAULT_POSTS_LIMIT).queryKey,
-        })
-
-        toast.success('Post published', {
-          description: 'Your article is now live on the feed.',
-        })
-
-        await navigate({
-          to: '/$username/$postSlug',
-          params: {
-            username,
-            postSlug: post.slug,
-          },
-          viewTransition: true,
-        })
-      } catch (error) {
-        const description =
-          error instanceof Error
-            ? error.message
-            : 'Something went wrong. Please try again.'
-
-        toast.error('Failed to publish post', {
-          description,
-        })
-      }
+      await updatePostMutation.mutateAsync({
+        id: post.id,
+        ...value,
+      })
     },
   })
 
   return (
-    <Tabs
-      defaultValue="edit"
-      className="flex min-h-svh items-center justify-center"
-    >
-      <header className="fixed top-0 right-0 left-0 z-50 h-14 border-b bg-background/85 backdrop-blur-sm supports-backdrop-filter:bg-background/65">
-        <div className="container mx-auto flex h-full w-full max-w-348 items-center justify-between px-4 md:px-6">
-          <Link to="/" viewTransition>
-            <span className="text-xl font-bold tracking-tighter">
-              Marvticle
-            </span>
-          </Link>
-
-          <TabsList className="gap-2 bg-transparent">
-            <TabsTrigger value="edit">
-              <PencilIcon /> Edit
-            </TabsTrigger>
-            <TabsTrigger value="preview">
-              <AppWindowIcon /> Preview
-            </TabsTrigger>
-          </TabsList>
-        </div>
-      </header>
-
+    <>
       <main className="container mx-auto h-[calc(100vh-8rem)] w-full max-w-4xl overflow-y-auto bg-card px-12 py-8">
         <TabsContent value="edit">
           <form
-            id="create-post-form"
+            id="update-post-form"
             className="space-y-6"
             onSubmit={(e) => {
               e.preventDefault()
@@ -152,7 +96,7 @@ function RouteComponent() {
                   return (
                     <Field data-invalid={isInvalid}>
                       <ImageDropzone
-                        value={field.state.value}
+                        value={field.state.value ?? undefined}
                         onChange={field.handleChange}
                         aria-invalid={isInvalid}
                       />
@@ -242,7 +186,7 @@ function RouteComponent() {
                     >
                       <img
                         src={getStorageUrl(coverImage)}
-                        alt={title}
+                        alt={title ?? ''}
                         className="h-full w-full object-cover"
                       />
                     </AspectRatio>
@@ -269,16 +213,53 @@ function RouteComponent() {
 
       <footer className="fixed right-0 bottom-0 left-0 z-50 h-14">
         <div className="container mx-auto flex h-full w-full max-w-4xl items-center justify-start gap-3">
+          <form.Field
+            name="status"
+            children={(field) => {
+              const isInvalid =
+                field.state.meta.isTouched && !field.state.meta.isValid
+
+              return (
+                <Field
+                  data-invalid={isInvalid}
+                  orientation="horizontal"
+                  className="w-auto items-center"
+                >
+                  <FieldLabel>Status</FieldLabel>
+                  <ToggleGroup
+                    type="single"
+                    value={field.state.value}
+                    onValueChange={(value) => {
+                      if (isPostStatus(value)) {
+                        field.handleChange(value)
+                      }
+                    }}
+                    size="sm"
+                    variant="outline"
+                    aria-invalid={isInvalid}
+                  >
+                    {postStatusOptions.map((status) => (
+                      <ToggleGroupItem key={status} value={status}>
+                        {status}
+                      </ToggleGroupItem>
+                    ))}
+                  </ToggleGroup>
+                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
+                </Field>
+              )
+            }}
+          />
+
           <form.Subscribe
             selector={(state) => [state.canSubmit, state.isSubmitting]}
             children={([canSubmit, isSubmitting]) => {
               const canSubmitNow = canSubmit ?? false
               const formIsSubmitting = isSubmitting ?? false
-              const isPending = formIsSubmitting || createPostMutation.isPending
+              const isPending = formIsSubmitting || updatePostMutation.isPending
 
               return (
                 <Button
-                  form="create-post-form"
+                  form="update-post-form"
                   type="submit"
                   size="lg"
                   disabled={!canSubmitNow || isPending}
@@ -286,10 +267,10 @@ function RouteComponent() {
                   {isPending ? (
                     <>
                       <Spinner />
-                      Publishing...
+                      Updating...
                     </>
                   ) : (
-                    'Publish post'
+                    'Update post'
                   )}
                 </Button>
               )
@@ -303,6 +284,6 @@ function RouteComponent() {
           </Button>
         </div>
       </footer>
-    </Tabs>
+    </>
   )
 }

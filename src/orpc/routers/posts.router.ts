@@ -6,6 +6,13 @@ import { orpcBase } from '#/orpc'
 import { orpcRequireAuthMiddleware } from '#/orpc/middlewares'
 import { postPaginationCursorSchema } from '#/schemas/posts.schema'
 
+type UpdatePostValues = Partial<
+  Pick<
+    typeof postsTable.$inferInsert,
+    'title' | 'coverImage' | 'content' | 'status'
+  >
+>
+
 const generateSlug = (title: string): string => {
   return `${limax(title)}-${nanoid(5)}`
 }
@@ -148,6 +155,53 @@ const getOneByUsernameAndSlugHandler =
     }
   )
 
+const getEditableByUsernameAndSlugHandler = orpcBase
+  .use(orpcRequireAuthMiddleware)
+  .posts.getEditableByUsernameAndSlug.handler(
+    async ({ context, input, errors }) => {
+      const [row] = await context.db
+        .select({
+          ...createdPostSelect,
+          authorId: postsTable.authorId,
+        })
+        .from(postsTable)
+        .innerJoin(userTable, eq(postsTable.authorId, userTable.id))
+        .where(
+          and(
+            eq(userTable.username, input.username),
+            eq(postsTable.slug, input.slug)
+          )
+        )
+        .limit(1)
+
+      if (!row) {
+        throw errors.NOT_FOUND({
+          message: `Post @${input.username}/${input.slug} not found.`,
+        })
+      }
+
+      if (row.authorId !== context.auth.user.id) {
+        throw errors.FORBIDDEN({
+          message: 'You can only edit your own posts.',
+        })
+      }
+
+      return {
+        id: row.id,
+        slug: row.slug,
+        title: row.title,
+        coverImage: row.coverImage,
+        content: row.content,
+        status: row.status,
+        viewsCount: row.viewsCount,
+        likesCount: row.likesCount,
+        commentsCount: row.commentsCount,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+      }
+    }
+  )
+
 const createPostHandler = orpcBase
   .use(orpcRequireAuthMiddleware)
   .posts.create.handler(async ({ context, input, errors }) => {
@@ -171,8 +225,66 @@ const createPostHandler = orpcBase
     return post
   })
 
+const updatePostHandler = orpcBase
+  .use(orpcRequireAuthMiddleware)
+  .posts.update.handler(async ({ context, input, errors }) => {
+    const [existingPost] = await context.db
+      .select({
+        authorId: postsTable.authorId,
+      })
+      .from(postsTable)
+      .where(eq(postsTable.id, input.id))
+      .limit(1)
+
+    if (!existingPost) {
+      throw errors.NOT_FOUND({
+        message: 'Post not found.',
+      })
+    }
+
+    if (existingPost.authorId !== context.auth.user.id) {
+      throw errors.FORBIDDEN({
+        message: 'You can only update your own posts.',
+      })
+    }
+
+    const updateValues: UpdatePostValues = {}
+
+    if (input.title !== undefined) {
+      updateValues.title = input.title
+    }
+
+    if (input.coverImage !== undefined) {
+      updateValues.coverImage = input.coverImage || null
+    }
+
+    if (input.content !== undefined) {
+      updateValues.content = input.content
+    }
+
+    if (input.status !== undefined) {
+      updateValues.status = input.status
+    }
+
+    const [post] = await context.db
+      .update(postsTable)
+      .set(updateValues)
+      .where(eq(postsTable.id, input.id))
+      .returning(createdPostSelect)
+
+    if (!post) {
+      throw errors.INTERNAL_SERVER_ERROR({
+        message: 'Failed to update post.',
+      })
+    }
+
+    return post
+  })
+
 export const postsRouter = {
   getMany: getManyPostsHandler,
   getOneByUsernameAndSlug: getOneByUsernameAndSlugHandler,
+  getEditableByUsernameAndSlug: getEditableByUsernameAndSlugHandler,
   create: createPostHandler,
+  update: updatePostHandler,
 }
