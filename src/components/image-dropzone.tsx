@@ -61,10 +61,18 @@ export const ImageDropzone = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const xhrRef = useRef<XMLHttpRequest | null>(null)
   const prevValueRef = useRef(value)
+  const uploadAbortRef = useRef<AbortController | null>(null)
+  const deleteAbortRef = useRef<AbortController | null>(null)
+  const isMountedRef = useRef(true)
 
   const deleteManagedFile = useCallback(async (fileKey: string) => {
+    const abortController = new AbortController()
+    deleteAbortRef.current?.abort()
+    deleteAbortRef.current = abortController
+
     const deleteResponse = await fetch('/api/s3/cover-image', {
       method: 'DELETE',
+      signal: abortController.signal,
       headers: {
         'Content-Type': 'application/json',
       },
@@ -104,11 +112,16 @@ export const ImageDropzone = ({
       setErrorMessage(null)
 
       try {
+        const abortController = new AbortController()
+        uploadAbortRef.current?.abort()
+        uploadAbortRef.current = abortController
+
         const presignedUrlResponse = await fetch('/api/s3/cover-image', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
+          signal: abortController.signal,
           body: JSON.stringify({
             fileName: file.name,
             contentType: file.type,
@@ -131,6 +144,11 @@ export const ImageDropzone = ({
           }
 
           throw new Error(uploadErrorMessage)
+        }
+
+        if (!isMountedRef.current) {
+          revokeObjectUrl(temporaryPreviewUrl)
+          return
         }
 
         const { fileKey, presignedUrl, publicUrl } =
@@ -183,6 +201,11 @@ export const ImageDropzone = ({
 
         revokeObjectUrl(temporaryPreviewUrl)
 
+        if (!isMountedRef.current) {
+          revokeObjectUrl(temporaryPreviewUrl)
+          return
+        }
+
         setCoverFile({
           fileKey,
           previewUrl: publicUrl,
@@ -216,6 +239,11 @@ export const ImageDropzone = ({
         }
       } catch (error) {
         revokeObjectUrl(temporaryPreviewUrl)
+
+        if (!isMountedRef.current) {
+          revokeObjectUrl(temporaryPreviewUrl)
+          return
+        }
 
         setCoverFile(previousCoverFile ?? null)
         setPendingFile(null)
@@ -347,7 +375,8 @@ export const ImageDropzone = ({
 
       if (hasInvalidFileType) {
         toast.error('Upload failed', {
-          description: 'Unsupported file type, use PNG, JPG, GIF, or WEBP',
+          description:
+            'Unsupported file type, use PNG, JPG, JPEG, GIF, or WEBP',
         })
       }
     }
@@ -362,8 +391,12 @@ export const ImageDropzone = ({
 
   useEffect(() => {
     const currentPreviewUrl = coverFile?.previewUrl
+    isMountedRef.current = true
 
     return () => {
+      isMountedRef.current = false
+      uploadAbortRef.current?.abort()
+      deleteAbortRef.current?.abort()
       xhrRef.current?.abort()
       revokeObjectUrl(currentPreviewUrl)
     }
