@@ -1,35 +1,44 @@
 import { ChatCircleIcon, ThumbsUpIcon } from '@phosphor-icons/react'
-import { cjk } from '@streamdown/cjk'
-import { code } from '@streamdown/code'
-import { math } from '@streamdown/math'
-import { mermaid } from '@streamdown/mermaid'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 import { formatDate, formatDistanceToNowStrict } from 'date-fns'
-import 'katex/dist/katex.min.css'
 import { EyeIcon, ShareIcon } from 'lucide-react'
-import { Streamdown } from 'streamdown'
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
+import type { ReactNode } from 'react'
 
+import type { RouterOutputs } from '#/orpc/routers'
+import {
+  AuthorCard,
+  AuthorCardFallback,
+  AuthorCardSkeleton,
+} from '#/components/author-card'
+import { MarkdownRenderer } from '#/components/markdown-renderer'
+import { PostShareDialog } from '#/components/post-share-dialog'
 import { AspectRatio } from '#/components/ui/aspect-ratio'
+import { Button } from '#/components/ui/button'
 import { Separator } from '#/components/ui/separator'
 import { Skeleton } from '#/components/ui/skeleton'
 import { UserAvatar } from '#/components/user-avatar'
+import { authorProfileQueryOptions } from '#/hooks/use-author-profile'
 import { postDetailQueryOptions } from '#/hooks/use-post-detail'
-import { Button } from '#/components/ui/button'
-import { PostShareDialog } from '#/components/post-share-dialog'
+import { getStorageUrl } from '#/utils/storage'
 
 export const Route = createFileRoute('/_app/$username/$postSlug')({
   loader: async ({ context: { queryClient }, params }) => {
-    return queryClient.ensureQueryData(
-      postDetailQueryOptions(params.username, params.postSlug)
-    )
+    const [post, author] = await Promise.all([
+      queryClient.ensureQueryData(
+        postDetailQueryOptions(params.username, params.postSlug)
+      ),
+      queryClient.ensureQueryData(authorProfileQueryOptions(params.username)),
+    ])
+
+    return { post, author }
   },
   head: ({ loaderData }) => ({
     meta: [
       {
         title: loaderData
-          ? `${loaderData.title} | marvticle`
+          ? `${loaderData.post.title} | marvticle`
           : 'Post not found | marvticle',
       },
     ],
@@ -46,6 +55,7 @@ function RouteComponent() {
   const { data: post } = useSuspenseQuery(
     postDetailQueryOptions(username, postSlug)
   )
+  const authorQuery = useSuspenseQuery(authorProfileQueryOptions(username))
 
   const authorUsername = post.author.username
 
@@ -54,142 +64,250 @@ function RouteComponent() {
   }
 
   return (
-    <>
-      <PostShareDialog
-        open={openShareDialog}
-        setOpen={setOpenShareDialog}
-        postTitle={post.title}
-        authorUsername={authorUsername}
-      />
-      <article className="flex flex-col">
-        {post.coverImage && (
-          <AspectRatio ratio={2.38 / 1} className="overflow-hidden border">
-            <img
-              src={post.coverImage}
-              alt={post.title}
-              className="h-full w-full object-cover"
-            />
-          </AspectRatio>
-        )}
+    <PostDetailLayout
+      leftAside={
+        <EngagementActions
+          likesCount={post.likesCount}
+          commentsCount={post.commentsCount}
+          viewsCount={post.viewsCount}
+          onShare={handleShareClick}
+        />
+      }
+      rightAside={
+        <Suspense fallback={<AuthorCardSkeleton />}>
+          <AuthorRelatedPostsSidebar
+            authorProfile={authorQuery.data}
+            fallbackAuthor={post.author}
+          />
+        </Suspense>
+      }
+    >
+      <main className="w-full min-w-0">
+        <PostShareDialog
+          open={openShareDialog}
+          setOpen={setOpenShareDialog}
+          postTitle={post.title}
+          authorUsername={authorUsername}
+        />
 
-        <header className="my-6 flex flex-col gap-6 px-6">
-          <div className="flex items-center gap-3">
-            <UserAvatar
-              image={post.author.image}
-              name={post.author.name}
-              className="size-10"
-            />
+        <article className="flex min-w-0 flex-col">
+          {post.coverImage && (
+            <AspectRatio ratio={2.38 / 1} className="overflow-hidden border">
+              <img
+                src={getStorageUrl(post.coverImage)}
+                alt={post.title}
+                className="h-full w-full object-cover"
+              />
+            </AspectRatio>
+          )}
 
-            <div className="flex flex-col gap-0.5">
-              <div className="flex items-center gap-2">
-                <p className="text-base font-semibold">{post.author.name}</p>
-                <p className="text-sm text-muted-foreground">
-                  @{authorUsername}
-                </p>
-              </div>
+          <header className="my-6 flex min-w-0 flex-col gap-6 px-6">
+            <div className="flex items-center gap-3">
+              <UserAvatar
+                image={post.author.image}
+                name={post.author.name}
+                className="size-10"
+              />
 
-              <div className="flex items-center gap-2">
-                <p className="text-xs text-muted-foreground">
-                  Posted on{' '}
-                  {formatDate(new Date(post.createdAt), 'MMM d, yyyy')}
-                </p>
+              <div className="flex flex-col gap-0.5">
+                <div className="flex items-center gap-2">
+                  <p className="text-base font-semibold">{post.author.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    @{authorUsername}
+                  </p>
+                </div>
 
-                <Separator
-                  orientation="vertical"
-                  className="rounded-full data-vertical:h-1 data-vertical:w-1 data-vertical:self-center"
-                />
+                <div className="flex items-center gap-2">
+                  <p className="text-xs text-muted-foreground">
+                    Posted on{' '}
+                    {formatDate(new Date(post.createdAt), 'MMM d, yyyy')}
+                  </p>
 
-                <p className="text-xs text-muted-foreground">
-                  {formatDistanceToNowStrict(new Date(post.updatedAt), {
-                    addSuffix: true,
-                  })}
-                </p>
+                  <Separator
+                    orientation="vertical"
+                    className="rounded-full data-vertical:h-1 data-vertical:w-1 data-vertical:self-center"
+                  />
+
+                  <p className="text-xs text-muted-foreground">
+                    {formatDistanceToNowStrict(new Date(post.updatedAt), {
+                      addSuffix: true,
+                    })}
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
 
-          <h1 className="text-3xl leading-tight font-bold tracking-tight sm:text-4xl">
-            {post.title}
-          </h1>
-        </header>
+            <h1 className="mb-4 text-3xl leading-tight font-bold tracking-tight wrap-break-word sm:text-4xl lg:text-5xl">
+              {post.title}
+            </h1>
+          </header>
 
-        <Separator />
-
-        <div className="my-2 flex items-center gap-2 px-6">
-          <Button variant="ghost">
-            <ThumbsUpIcon className="size-4" />
-            {post.likesCount}
-          </Button>
-
-          <Button variant="ghost">
-            <ChatCircleIcon className="size-4" />
-            {post.commentsCount}
-          </Button>
-
-          <Button variant="ghost">
-            <EyeIcon className="size-4" />
-            {post.viewsCount}
-          </Button>
-
-          <Button
-            type="button"
-            variant="ghost"
-            className="ms-auto"
-            onClick={handleShareClick}
-          >
-            <ShareIcon className="size-4" />
-            Share
-          </Button>
-        </div>
-
-        <Separator className="mb-6" />
-
-        <Streamdown
-          plugins={{
-            code: code,
-            mermaid: mermaid,
-            math: math,
-            cjk: cjk,
-          }}
-          className="px-6"
-        >
-          {post.content}
-        </Streamdown>
-      </article>
-    </>
+          <MarkdownRenderer
+            content={post.content}
+            className="max-w-none min-w-0 px-6 wrap-break-word **:min-w-0 [&_li]:wrap-break-word [&_p]:wrap-break-word [&_pre]:overflow-x-auto"
+          />
+        </article>
+      </main>
+    </PostDetailLayout>
   )
 }
 
 function PostDetailPending() {
   return (
-    <article className="flex flex-col gap-8">
-      <Skeleton className="h-7 w-36" />
+    <PostDetailLayout
+      leftAside={<EngagementActionsSkeleton />}
+      rightAside={<AuthorCardSkeleton />}
+    >
+      <article className="flex min-w-0 flex-col">
+        <Skeleton className="aspect-[2.38/1] w-full" />
 
-      <header className="flex flex-col gap-6">
-        <div className="flex items-center gap-3">
-          <Skeleton className="size-12 rounded-full" />
+        <header className="my-6 flex min-w-0 flex-col gap-6 px-6">
+          <div className="flex items-center gap-3">
+            <Skeleton className="size-12 rounded-full" />
 
-          <div className="flex flex-col gap-2">
-            <Skeleton className="h-4 w-28" />
-            <Skeleton className="h-4 w-20" />
+            <div className="flex flex-col gap-2">
+              <Skeleton className="h-4 w-28" />
+              <Skeleton className="h-4 w-40" />
+            </div>
           </div>
+
+          <div className="space-y-3">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-4/5" />
+            <Skeleton className="h-5 w-72" />
+          </div>
+        </header>
+
+        <Separator />
+
+        <div className="my-2 flex items-center gap-2 px-6">
+          <Skeleton className="h-9 w-16" />
+          <Skeleton className="h-9 w-16" />
+          <Skeleton className="h-9 w-16" />
+          <Skeleton className="ms-auto h-9 w-24" />
         </div>
 
-        <div className="space-y-3">
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-4/5" />
-          <Skeleton className="h-5 w-72" />
+        <Separator className="mb-6" />
+
+        <div className="space-y-3 px-6">
+          <Skeleton className="h-5 w-full" />
+          <Skeleton className="h-5 w-[96%]" />
+          <Skeleton className="h-5 w-[92%]" />
+          <Skeleton className="h-5 w-[88%]" />
         </div>
-      </header>
+      </article>
+    </PostDetailLayout>
+  )
+}
 
-      <Skeleton className="aspect-21/9 w-full" />
-
-      <div className="space-y-3">
-        <Skeleton className="h-5 w-full" />
-        <Skeleton className="h-5 w-[96%]" />
-        <Skeleton className="h-5 w-[92%]" />
-        <Skeleton className="h-5 w-[88%]" />
+function EngagementActionsSkeleton() {
+  return (
+    <div className="flex h-72 flex-col items-center gap-y-4 overflow-hidden">
+      <div className="flex flex-col items-center gap-1">
+        <Skeleton className="size-11" />
+        <Skeleton className="h-3 w-6" />
       </div>
-    </article>
+
+      <div className="flex flex-col items-center gap-1">
+        <Skeleton className="size-11" />
+        <Skeleton className="h-3 w-6" />
+      </div>
+
+      <div className="flex flex-col items-center gap-1">
+        <Skeleton className="size-7" />
+        <Skeleton className="h-3 w-6" />
+      </div>
+
+      <Skeleton className="mt-auto size-11" />
+    </div>
+  )
+}
+
+function PostDetailLayout({
+  children,
+  leftAside,
+  rightAside,
+}: Readonly<{
+  children: ReactNode
+  leftAside?: ReactNode
+  rightAside?: ReactNode
+}>) {
+  return (
+    <div className="container mx-auto grid w-full max-w-348 grid-cols-1 gap-4 px-4 py-20 md:px-6 xl:grid-cols-[minmax(0,3rem)_minmax(0,1fr)_minmax(0,24rem)]">
+      <aside className="hidden min-w-0 xl:sticky xl:top-20 xl:block xl:max-h-[calc(100svh-5rem)] xl:self-start xl:overflow-y-auto">
+        {leftAside}
+      </aside>
+      <div className="min-w-0">{children}</div>
+      <aside className="hidden min-w-0 xl:sticky xl:top-20 xl:block xl:max-h-[calc(100svh-5rem)] xl:self-start xl:overflow-y-auto">
+        {rightAside}
+      </aside>
+    </div>
+  )
+}
+
+const EngagementActions = ({
+  likesCount,
+  commentsCount,
+  viewsCount,
+  onShare,
+}: {
+  likesCount: number
+  commentsCount: number
+  viewsCount: number
+  onShare?: () => void
+}) => {
+  return (
+    <div className="flex h-72 flex-col items-center gap-y-4 overflow-hidden">
+      <div className="flex flex-col items-center gap-1">
+        <Button variant="ghost" size="icon-lg" aria-label="Like post" disabled>
+          <ThumbsUpIcon className="size-4" />
+        </Button>
+        <span className="text-xs">{likesCount}</span>
+      </div>
+
+      <div className="flex flex-col items-center gap-1">
+        <Button
+          variant="ghost"
+          size="icon-lg"
+          aria-label="Open comments"
+          disabled
+        >
+          <ChatCircleIcon className="size-4" />
+        </Button>
+        <span className="text-xs">{commentsCount}</span>
+      </div>
+
+      <div className="flex flex-col items-center gap-1">
+        <EyeIcon className="m-1.5 size-4" />
+        <span className="text-xs">{viewsCount}</span>
+      </div>
+
+      <Button
+        variant="ghost"
+        size="icon-lg"
+        className="mt-auto"
+        onClick={onShare}
+        aria-label="Share post"
+      >
+        <ShareIcon className="size-4" />
+      </Button>
+    </div>
+  )
+}
+
+function AuthorRelatedPostsSidebar({
+  authorProfile,
+  fallbackAuthor,
+}: Readonly<{
+  authorProfile?: RouterOutputs['users']['getAuthorByUsername']
+  fallbackAuthor: RouterOutputs['posts']['getMany']['items'][number]['author']
+}>) {
+  return (
+    <div className="grid grid-cols-1 gap-y-16">
+      {authorProfile ? <AuthorCard author={authorProfile} /> : null}
+      {!authorProfile ? <AuthorCardFallback author={fallbackAuthor} /> : null}
+
+      {/* More from this author Card */}
+    </div>
   )
 }

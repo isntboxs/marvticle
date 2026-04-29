@@ -16,19 +16,15 @@ import {
   DEFAULT_POSTS_LIMIT,
   postsInfiniteQueryOptions,
 } from '#/hooks/use-posts'
-import {
-  Field,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from '#/components/ui/field'
+import { Field, FieldError, FieldGroup } from '#/components/ui/field'
 import { Textarea } from '#/components/ui/textarea'
-import { Input } from '#/components/ui/input'
 import { MarkdownEditor } from '#/components/markdown-editor'
 import { Button } from '#/components/ui/button'
 import { Spinner } from '#/components/ui/spinner'
 import { MarkdownRenderer } from '#/components/markdown-renderer'
 import { AspectRatio } from '#/components/ui/aspect-ratio'
+import { ImageDropzone } from '#/components/image-dropzone'
+import { getStorageUrl } from '#/utils/storage'
 
 export const Route = createFileRoute('/new')({
   beforeLoad: ({ context, location }) => {
@@ -148,6 +144,27 @@ function RouteComponent() {
           >
             <FieldGroup>
               <form.Field
+                name="coverImage"
+                children={(field) => {
+                  const isInvalid =
+                    field.state.meta.isTouched && !field.state.meta.isValid
+
+                  return (
+                    <Field data-invalid={isInvalid}>
+                      <ImageDropzone
+                        value={field.state.value}
+                        onChange={field.handleChange}
+                        aria-invalid={isInvalid}
+                      />
+                      {isInvalid && (
+                        <FieldError errors={field.state.meta.errors} />
+                      )}
+                    </Field>
+                  )
+                }}
+              />
+
+              <form.Field
                 name="title"
                 children={(field) => {
                   const isInvalid =
@@ -161,41 +178,16 @@ function RouteComponent() {
                         value={field.state.value}
                         onBlur={field.handleBlur}
                         onChange={(e) => field.handleChange(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+                            e.preventDefault()
+                          }
+                        }}
                         aria-invalid={isInvalid}
                         placeholder="New post title here..."
                         autoComplete="off"
                         maxLength={180}
                         className="resize-none border-none bg-transparent! px-0 text-4xl! font-semibold tracking-tight shadow-none ring-0!"
-                      />
-                      {isInvalid && (
-                        <FieldError errors={field.state.meta.errors} />
-                      )}
-                    </Field>
-                  )
-                }}
-              />
-
-              <form.Field
-                name="coverImage"
-                children={(field) => {
-                  const isInvalid =
-                    field.state.meta.isTouched && !field.state.meta.isValid
-
-                  return (
-                    <Field data-invalid={isInvalid}>
-                      <FieldLabel htmlFor={field.name}>
-                        Cover image URL
-                      </FieldLabel>
-                      <Input
-                        id={field.name}
-                        name={field.name}
-                        value={field.state.value}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        aria-invalid={isInvalid}
-                        placeholder="https://example.com/cover.jpg"
-                        autoComplete="off"
-                        type="url"
                       />
                       {isInvalid && (
                         <FieldError errors={field.state.meta.errors} />
@@ -249,7 +241,7 @@ function RouteComponent() {
                       className="overflow-hidden border"
                     >
                       <img
-                        src={coverImage}
+                        src={getStorageUrl(coverImage)}
                         alt={title}
                         className="h-full w-full object-cover"
                       />

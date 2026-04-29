@@ -33,50 +33,52 @@ function RouteComponent() {
 
   return (
     <>
-      {posts.length === 0 ? (
-        <Empty className="border">
-          <EmptyHeader>
-            <EmptyTitle>No posts published yet</EmptyTitle>
-            <EmptyDescription>
-              Posts will appear here once they have status
-              <code className="mx-1">PUBLISHED</code>.
-            </EmptyDescription>
-          </EmptyHeader>
-        </Empty>
-      ) : (
-        <section className="grid gap-4">
-          {posts.map((post) => (
-            <PostFeedCard {...post} key={post.id} />
-          ))}
-        </section>
-      )}
+      <main className="container mx-auto flex w-full max-w-4xl flex-col py-20">
+        {posts.length === 0 ? (
+          <Empty className="border">
+            <EmptyHeader>
+              <EmptyTitle>No posts published yet</EmptyTitle>
+              <EmptyDescription>
+                Posts will appear here once they have status
+                <code className="mx-1">PUBLISHED</code>.
+              </EmptyDescription>
+            </EmptyHeader>
+          </Empty>
+        ) : (
+          <section className="grid gap-4">
+            {posts.map((post) => (
+              <PostFeedCard {...post} key={post.id} />
+            ))}
+          </section>
+        )}
 
-      {hasNextPage ? (
-        <div className="flex justify-center">
-          <Button
-            variant="outline"
-            size="lg"
-            onClick={() => fetchNextPage()}
-            disabled={isFetchingNextPage}
-          >
-            {isFetchingNextPage ? (
-              <>
-                <Spinner />
-                Loading more
-              </>
-            ) : (
-              'Load more posts'
-            )}
-          </Button>
-        </div>
-      ) : null}
+        {hasNextPage ? (
+          <div className="flex justify-center">
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={() => fetchNextPage()}
+              disabled={isFetchingNextPage}
+            >
+              {isFetchingNextPage ? (
+                <>
+                  <Spinner />
+                  Loading more
+                </>
+              ) : (
+                'Load more posts'
+              )}
+            </Button>
+          </div>
+        ) : null}
+      </main>
     </>
   )
 }
 
 function PostsFeedPending() {
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-6 py-10">
+    <main className="container mx-auto flex w-full max-w-4xl flex-col gap-8 py-20">
       <section className="grid gap-4">
         {Array.from({ length: 3 }).map((_, index) => (
           <Card key={index} className="border">

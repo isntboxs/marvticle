@@ -15,6 +15,7 @@ import { Separator } from '#/components/ui/separator'
 import { UserAvatar } from '#/components/user-avatar'
 import { getPostReadTime } from '#/lib/posts'
 import { cn } from '#/lib/utils'
+import { getStorageUrl } from '#/utils/storage'
 
 type Props = RouterOutputs['posts']['getMany']['items'][number]
 
@@ -30,7 +31,7 @@ export const PostFeedCard = (post: Props) => {
       {post.coverImage && (
         <AspectRatio ratio={2.38 / 1}>
           <img
-            src={post.coverImage}
+            src={getStorageUrl(post.coverImage)}
             alt={post.title}
             className="h-full w-full object-cover"
           />
