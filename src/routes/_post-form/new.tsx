@@ -26,6 +26,21 @@ export const Route = createFileRoute('/_post-form/new')({
   component: RouteComponent,
 })
 
+type FormMeta = {
+  submitAction: 'publish' | 'save'
+}
+
+const onSubmitMeta: FormMeta = {
+  submitAction: 'publish',
+}
+
+const defaultValues: CreatePostBodyInput = {
+  title: '',
+  coverImage: '',
+  content: '',
+  status: 'PUBLISHED',
+}
+
 function RouteComponent() {
   const { auth, queryClient, orpc } = Route.useRouteContext()
 
@@ -35,23 +50,29 @@ function RouteComponent() {
     username: auth.user.username,
   })
 
-  const defaultValues: CreatePostBodyInput = {
-    title: '',
-    coverImage: '',
-    content: '',
-    status: 'PUBLISHED',
-  }
-
   const form = useForm({
     defaultValues,
+    onSubmitMeta,
     validators: {
       onChange: createPostBodySchema,
       onSubmit: createPostBodySchema,
     },
-    onSubmit: async ({ value }) => {
-      await createPostMutation.mutateAsync(value)
+    onSubmit: async ({ value, meta }) => {
+      if (meta.submitAction === 'save') {
+        await createPostMutation.mutateAsync({ ...value, status: 'DRAFT' })
+      } else {
+        await createPostMutation.mutateAsync(value)
+      }
     },
   })
+
+  const handlePublish = () => {
+    void form.handleSubmit({ submitAction: 'publish' })
+  }
+
+  const handleSave = () => {
+    void form.handleSubmit({ submitAction: 'save' })
+  }
 
   return (
     <>
@@ -63,7 +84,6 @@ function RouteComponent() {
             onSubmit={(e) => {
               e.preventDefault()
               e.stopPropagation()
-              void form.handleSubmit()
             }}
           >
             <FieldGroup>
@@ -196,8 +216,8 @@ function RouteComponent() {
           <form.Subscribe
             selector={(state) => [state.canSubmit, state.isSubmitting]}
             children={([canSubmit, isSubmitting]) => {
-              const canSubmitNow = canSubmit ?? false
-              const formIsSubmitting = isSubmitting ?? false
+              const canSubmitNow = !!canSubmit
+              const formIsSubmitting = !!isSubmitting
               const isPending = formIsSubmitting || createPostMutation.isPending
 
               return (
@@ -205,6 +225,7 @@ function RouteComponent() {
                   form="create-post-form"
                   type="submit"
                   size="lg"
+                  onClick={handlePublish}
                   disabled={!canSubmitNow || isPending}
                 >
                   {isPending ? (
@@ -214,6 +235,34 @@ function RouteComponent() {
                     </>
                   ) : (
                     'Publish post'
+                  )}
+                </Button>
+              )
+            }}
+          />
+
+          <form.Subscribe
+            selector={(state) => [state.canSubmit, state.isSubmitting]}
+            children={([canSubmit, isSubmitting]) => {
+              const canSubmitNow = !!canSubmit
+              const formIsSubmitting = !!isSubmitting
+              const isPending = formIsSubmitting || createPostMutation.isPending
+
+              return (
+                <Button
+                  form="create-post-form"
+                  type="submit"
+                  size="lg"
+                  onClick={handleSave}
+                  disabled={!canSubmitNow || isPending}
+                >
+                  {isPending ? (
+                    <>
+                      <Spinner />
+                      Saving...
+                    </>
+                  ) : (
+                    'Save as draft'
                   )}
                 </Button>
               )

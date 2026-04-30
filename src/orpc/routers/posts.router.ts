@@ -130,28 +130,52 @@ const getManyPostsHandler = orpcBase.posts.getMany.handler(
 const getOneByUsernameAndSlugHandler =
   orpcBase.posts.getOneByUsernameAndSlug.handler(
     async ({ context, input, errors }) => {
+      const notFound = () =>
+        errors.NOT_FOUND({
+          message: `Post @${input.username}/${input.slug} not found.`,
+        })
+
       const postQuery = context.db
-        .select(publishedPostSelect)
+        .select({
+          ...publishedPostSelect,
+          authorId: postsTable.authorId,
+        })
         .from(postsTable)
         .innerJoin(userTable, eq(postsTable.authorId, userTable.id))
         .where(
           and(
             eq(userTable.username, input.username),
-            eq(postsTable.slug, input.slug),
-            eq(postsTable.status, 'PUBLISHED')
+            eq(postsTable.slug, input.slug)
           )
         )
         .limit(1)
 
-      const [post] = await postQuery
+      const [row] = await postQuery
 
-      if (!post) {
-        throw errors.NOT_FOUND({
-          message: `Post @${input.username}/${input.slug} not found.`,
-        })
+      if (!row) {
+        throw notFound()
       }
 
-      return post
+      if (row.status !== 'PUBLISHED') {
+        if (context.auth?.user.id !== row.authorId) {
+          throw notFound()
+        }
+      }
+
+      return {
+        id: row.id,
+        slug: row.slug,
+        title: row.title,
+        coverImage: row.coverImage,
+        content: row.content,
+        status: row.status,
+        viewsCount: row.viewsCount,
+        likesCount: row.likesCount,
+        commentsCount: row.commentsCount,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+        author: row.author,
+      }
     }
   )
 
