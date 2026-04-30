@@ -67,6 +67,7 @@ function RouteComponent() {
         await updatePostMutation.mutateAsync({
           id: post.id,
           ...value,
+          status: 'PUBLISHED',
         })
       } else if (meta.submitAction === 'save') {
         await updatePostMutation.mutateAsync({
