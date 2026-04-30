@@ -62,6 +62,16 @@ function RouteComponent() {
   const authorQuery = useSuspenseQuery(authorProfileQueryOptions(username))
 
   const authorUsername = post.author.username
+  const publishedAt = post.publishedAt ? new Date(post.publishedAt) : null
+  const updatedAt = new Date(post.updatedAt)
+  const showUpdatedAt =
+    publishedAt !== null && updatedAt.getTime() > publishedAt.getTime()
+  const unpublishedStatusLabel =
+    post.status === 'DRAFT'
+      ? 'Draft'
+      : post.status === 'ARCHIVED'
+        ? 'Archived'
+        : 'Unpublished'
 
   const handleShareClick = () => {
     setOpenShareDialog((prev) => !prev)
@@ -157,20 +167,26 @@ function RouteComponent() {
 
                   <div className="flex items-center gap-2">
                     <p className="text-xs text-muted-foreground">
-                      Posted on{' '}
-                      {formatDate(new Date(post.createdAt), 'MMM d, yyyy')}
+                      {publishedAt
+                        ? `Posted on ${formatDate(publishedAt, 'MMM d, yyyy')}`
+                        : unpublishedStatusLabel}
                     </p>
 
-                    <Separator
-                      orientation="vertical"
-                      className="rounded-full data-vertical:h-1 data-vertical:w-1 data-vertical:self-center"
-                    />
+                    {showUpdatedAt && (
+                      <>
+                        <Separator
+                          orientation="vertical"
+                          className="rounded-full data-vertical:h-1 data-vertical:w-1 data-vertical:self-center"
+                        />
 
-                    <p className="text-xs text-muted-foreground">
-                      {formatDistanceToNowStrict(new Date(post.updatedAt), {
-                        addSuffix: true,
-                      })}
-                    </p>
+                        <p className="text-xs text-muted-foreground">
+                          Updated{' '}
+                          {formatDistanceToNowStrict(updatedAt, {
+                            addSuffix: true,
+                          })}
+                        </p>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>

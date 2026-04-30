@@ -114,9 +114,19 @@ export const getManyPostsParamsSchema = z.object({
 })
 
 export const postPaginationCursorSchema = z.object({
-  createdAt: z.coerce.date(),
+  publishedAt: z.coerce.date(),
   id: z.uuid(),
 })
+
+export const legacyPostPaginationCursorSchema = z
+  .object({
+    createdAt: z.coerce.date(),
+    id: z.uuid(),
+  })
+  .transform(({ createdAt, id }) => ({
+    publishedAt: createdAt,
+    id,
+  }))
 
 export const postsPageSchema = z.object({
   items: z.array(postSchema),

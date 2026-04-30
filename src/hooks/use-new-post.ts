@@ -24,12 +24,16 @@ export const useNewPost = ({
   return useMutation(
     orpc.posts.create.mutationOptions({
       onSuccess: (data) => {
+        const isPublished = data.status === 'PUBLISHED'
+
         void queryClient.invalidateQueries({
           queryKey: postsInfiniteQueryOptions(DEFAULT_POSTS_LIMIT).queryKey,
         })
 
-        toast.success('Post published', {
-          description: 'Your article is now live on the feed.',
+        toast.success(isPublished ? 'Post published' : 'Draft saved', {
+          description: isPublished
+            ? 'Your article is now live on the feed.'
+            : 'Your draft is saved and only visible to you.',
         })
 
         void navigate({

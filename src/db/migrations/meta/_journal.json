@@ -15,6 +15,13 @@
       "when": 1777367998632,
       "tag": "0001_mysterious_kang",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1777546053236,
+      "tag": "0002_outgoing_hellcat",
+      "breakpoints": true
     }
   ]
 }
