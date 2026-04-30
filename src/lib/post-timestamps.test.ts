@@ -11,16 +11,14 @@ describe('post timestamp helpers', () => {
 
     expect(getCreatePostTimestampValues({ status: 'DRAFT', now })).toEqual({
       publishedAt: null,
-      updatedAt: now,
     })
   })
 
-  it('creates published posts with matching published and updated timestamps', () => {
+  it('creates published posts with a published timestamp', () => {
     const now = new Date('2026-04-30T10:00:00.000Z')
 
     expect(getCreatePostTimestampValues({ status: 'PUBLISHED', now })).toEqual({
       publishedAt: now,
-      updatedAt: now,
     })
   })
 
@@ -30,49 +28,33 @@ describe('post timestamp helpers', () => {
     expect(
       getUpdatePostTimestampValues({
         currentStatus: 'DRAFT',
-        currentPublishedAt: null,
-        hasContentChanges: false,
         nextStatus: 'PUBLISHED',
         now,
       })
     ).toEqual({
       publishedAt: now,
-      updatedAt: now,
     })
   })
 
-  it('edits a published post without changing the published timestamp', () => {
-    const publishedAt = new Date('2026-04-29T10:00:00.000Z')
-    const now = new Date('2026-04-30T10:00:00.000Z')
-
+  it('does not patch timestamps when editing a published post', () => {
     expect(
       getUpdatePostTimestampValues({
         currentStatus: 'PUBLISHED',
-        currentPublishedAt: publishedAt,
-        hasContentChanges: true,
-        now,
       })
-    ).toEqual({
-      publishedAt,
-      updatedAt: now,
-    })
+    ).toEqual({})
   })
 
   it('archives a published post by clearing the published timestamp', () => {
-    const publishedAt = new Date('2026-04-29T10:00:00.000Z')
     const now = new Date('2026-04-30T10:00:00.000Z')
 
     expect(
       getUpdatePostTimestampValues({
         currentStatus: 'PUBLISHED',
-        currentPublishedAt: publishedAt,
-        hasContentChanges: false,
         nextStatus: 'ARCHIVED',
         now,
       })
     ).toEqual({
       publishedAt: null,
-      updatedAt: now,
     })
   })
 
@@ -82,14 +64,11 @@ describe('post timestamp helpers', () => {
     expect(
       getUpdatePostTimestampValues({
         currentStatus: 'ARCHIVED',
-        currentPublishedAt: null,
-        hasContentChanges: false,
         nextStatus: 'PUBLISHED',
         now,
       })
     ).toEqual({
       publishedAt: now,
-      updatedAt: now,
     })
   })
 
@@ -97,8 +76,6 @@ describe('post timestamp helpers', () => {
     expect(
       getUpdatePostTimestampValues({
         currentStatus: 'PUBLISHED',
-        currentPublishedAt: new Date('2026-04-29T10:00:00.000Z'),
-        hasContentChanges: false,
         nextStatus: 'PUBLISHED',
       })
     ).toEqual({})
