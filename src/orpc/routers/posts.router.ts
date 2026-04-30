@@ -13,7 +13,7 @@ import {
 type UpdatePostValues = Partial<
   Pick<
     typeof postsTable.$inferInsert,
-    'title' | 'coverImage' | 'content' | 'status' | 'publishedAt'
+    'title' | 'coverImage' | 'content' | 'status' | 'publishedAt' | 'updatedAt'
   >
 >
 
@@ -307,6 +307,10 @@ const updatePostHandler = orpcBase
         nextStatus: input.status,
       })
     )
+
+    if (Object.keys(updateValues).length > 0) {
+      updateValues.updatedAt = new Date()
+    }
 
     if (Object.keys(updateValues).length === 0) {
       return {
