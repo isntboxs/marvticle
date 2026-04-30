@@ -30,7 +30,8 @@ export const useUpdatePost = ({
     orpc.posts.update.mutationOptions({
       onSuccess: (data) => {
         void queryClient.invalidateQueries({
-          queryKey: editablePostDetailQueryOptions(username, data.slug).queryKey,
+          queryKey: editablePostDetailQueryOptions(username, data.slug)
+            .queryKey,
         })
 
         void queryClient.invalidateQueries({
@@ -43,16 +44,14 @@ export const useUpdatePost = ({
 
         toast.success('Post updated')
 
-        if (data.status === 'PUBLISHED') {
-          void navigate({
-            to: '/$username/$postSlug',
-            params: {
-              username,
-              postSlug: data.slug,
-            },
-            viewTransition: true,
-          })
-        }
+        void navigate({
+          to: '/$username/$postSlug',
+          params: {
+            username,
+            postSlug: data.slug,
+          },
+          viewTransition: true,
+        })
       },
 
       onError: (error) => {

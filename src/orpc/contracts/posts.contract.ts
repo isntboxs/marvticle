@@ -29,7 +29,7 @@ const getOneByUsernameAndSlugContract = base
     method: 'GET',
     summary: 'Get post by username and slug',
     description:
-      'Retrieve a single published post by the author username and post slug.',
+      'Retrieve a single post by the author username and post slug. Published posts are publicly accessible. Draft and archived posts are only accessible to the post owner.',
     tags: ['Posts'],
     operationId: 'getOneByUsernameAndSlug',
     successStatus: 200,
