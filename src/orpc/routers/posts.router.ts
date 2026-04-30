@@ -4,10 +4,7 @@ import limax from 'limax'
 import { postsTable, userTable } from '#/db/schemas'
 import { orpcBase } from '#/orpc'
 import { orpcRequireAuthMiddleware } from '#/orpc/middlewares'
-import {
-  legacyPostPaginationCursorSchema,
-  postPaginationCursorSchema,
-} from '#/schemas/posts.schema'
+import { postPaginationCursorSchema } from '#/schemas/posts.schema'
 import {
   getCreatePostTimestampValues,
   getUpdatePostTimestampValues,
@@ -16,7 +13,7 @@ import {
 type UpdatePostValues = Partial<
   Pick<
     typeof postsTable.$inferInsert,
-    'title' | 'coverImage' | 'content' | 'status' | 'publishedAt' | 'updatedAt'
+    'title' | 'coverImage' | 'content' | 'status' | 'publishedAt'
   >
 >
 
@@ -79,12 +76,6 @@ const decodeCursor = (cursor: string) => {
 
     if (result.success) {
       return result.data
-    }
-
-    const legacyResult = legacyPostPaginationCursorSchema.safeParse(value)
-
-    if (legacyResult.success) {
-      return legacyResult.data
     }
 
     return null
@@ -305,15 +296,7 @@ const updatePostHandler = orpcBase
       updateValues.content = input.content
     }
 
-    const hasContentChanges =
-      input.title !== undefined ||
-      input.coverImage !== undefined ||
-      input.content !== undefined
-
-    if (
-      input.status !== undefined &&
-      (input.status !== existingPost.status || hasContentChanges)
-    ) {
+    if (input.status !== undefined && input.status !== existingPost.status) {
       updateValues.status = input.status
     }
 
@@ -321,8 +304,6 @@ const updatePostHandler = orpcBase
       updateValues,
       getUpdatePostTimestampValues({
         currentStatus: existingPost.status,
-        currentPublishedAt: existingPost.publishedAt,
-        hasContentChanges,
         nextStatus: input.status,
       })
     )

@@ -7,15 +7,12 @@ type CreatePostTimestampInput = {
 
 type UpdatePostTimestampInput = {
   currentStatus: PostStatus
-  currentPublishedAt: Date | null
-  hasContentChanges: boolean
   nextStatus?: PostStatus
   now?: Date
 }
 
 export type PostTimestampUpdateValues = {
   publishedAt?: Date | null
-  updatedAt?: Date
 }
 
 export const getCreatePostTimestampValues = ({
@@ -24,34 +21,27 @@ export const getCreatePostTimestampValues = ({
 }: CreatePostTimestampInput) => {
   return {
     publishedAt: status === 'PUBLISHED' ? now : null,
-    updatedAt: now,
   }
 }
 
 export const getUpdatePostTimestampValues = ({
   currentStatus,
-  currentPublishedAt,
-  hasContentChanges,
   nextStatus,
   now = new Date(),
 }: UpdatePostTimestampInput): PostTimestampUpdateValues => {
-  const resolvedStatus = nextStatus ?? currentStatus
   const statusChanged = nextStatus !== undefined && nextStatus !== currentStatus
 
-  if (!statusChanged && !hasContentChanges) {
+  if (!statusChanged) {
     return {}
   }
 
-  if (resolvedStatus !== 'PUBLISHED') {
+  if (nextStatus !== 'PUBLISHED') {
     return {
       publishedAt: null,
-      updatedAt: now,
     }
   }
 
   return {
-    publishedAt:
-      currentStatus === 'PUBLISHED' ? (currentPublishedAt ?? now) : now,
-    updatedAt: now,
+    publishedAt: now,
   }
 }

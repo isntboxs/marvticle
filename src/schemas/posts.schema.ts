@@ -118,16 +118,6 @@ export const postPaginationCursorSchema = z.object({
   id: z.uuid(),
 })
 
-export const legacyPostPaginationCursorSchema = z
-  .object({
-    createdAt: z.coerce.date(),
-    id: z.uuid(),
-  })
-  .transform(({ createdAt, id }) => ({
-    publishedAt: createdAt,
-    id,
-  }))
-
 export const postsPageSchema = z.object({
   items: z.array(postSchema),
   nextCursor: z.string().nullable(),
