@@ -55,6 +55,20 @@
 - Add application routes under `src/routes`
 - Replace the placeholder form and query example when real data and UX requirements are known
 
+## Agent skills
+
+### Issue tracker
+
+Issues are tracked in the repo's GitHub Issues. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Uses default canonical labels: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Multi-context layout: `CONTEXT-MAP.md` at repo root maps to per-context `CONTEXT.md` files. See `docs/agents/domain.md`.
+
 <!-- intent-skills:start -->
 # Skill mappings - when working in these areas, load the linked skill file into context.
 skills:
