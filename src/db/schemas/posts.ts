@@ -35,6 +35,7 @@ export const postsTable = pgTable(
     viewsCount: integer('views_count').notNull().default(0),
     likesCount: integer('likes_count').notNull().default(0),
     commentsCount: integer('comments_count').notNull().default(0),
+    publishedAt: timestamp('published_at'),
     createdAt: timestamp('created_at').notNull().defaultNow(),
     updatedAt: timestamp('updated_at')
       .notNull()
@@ -48,8 +49,16 @@ export const postsTable = pgTable(
       'posts_comments_count_non_negative',
       sql`${table.commentsCount} >= 0`
     ),
+    check(
+      'posts_published_at_matches_status',
+      sql`(${table.status} = 'PUBLISHED' AND ${table.publishedAt} IS NOT NULL) OR (${table.status} <> 'PUBLISHED' AND ${table.publishedAt} IS NULL)`
+    ),
     uniqueIndex('posts_slug_idx').on(table.slug),
     index('posts_author_id_idx').on(table.authorId),
-    index('posts_status_idx').on(table.status),
+    index('posts_feed_idx').on(
+      table.status,
+      table.publishedAt.desc(),
+      table.id.desc()
+    ),
   ]
 )

@@ -10,19 +10,15 @@ import {
   isManagedFileKey,
 } from '#/utils/storage'
 
-vi.mock('#/lib/env/server', () => ({
-  env: {
-    VITE_BUCKET_PUBLIC_URL: 'https://cdn.example.com/uploads/',
-  },
-}))
-
 describe('storage utilities', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.stubEnv('VITE_BUCKET_PUBLIC_URL', 'https://cdn.example.com/uploads/')
   })
 
   afterEach(() => {
     vi.restoreAllMocks()
+    vi.unstubAllEnvs()
   })
 
   it('generates a managed file key with userId in path', () => {

@@ -29,6 +29,13 @@ export const useUpdatePost = ({
   return useMutation(
     orpc.posts.update.mutationOptions({
       onSuccess: (data) => {
+        const toastTitle =
+          data.status === 'PUBLISHED'
+            ? 'Post updated'
+            : data.status === 'DRAFT'
+              ? 'Draft saved'
+              : 'Post archived'
+
         void queryClient.invalidateQueries({
           queryKey: editablePostDetailQueryOptions(username, data.slug)
             .queryKey,
@@ -42,7 +49,7 @@ export const useUpdatePost = ({
           queryKey: postsInfiniteQueryOptions(DEFAULT_POSTS_LIMIT).queryKey,
         })
 
-        toast.success('Post updated')
+        toast.success(toastTitle)
 
         void navigate({
           to: '/$username/$postSlug',

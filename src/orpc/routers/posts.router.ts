@@ -1,15 +1,22 @@
-import { and, desc, eq, lt, or } from 'drizzle-orm'
+import { and, desc, eq, isNotNull, lt, or } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import limax from 'limax'
 import { postsTable, userTable } from '#/db/schemas'
 import { orpcBase } from '#/orpc'
 import { orpcRequireAuthMiddleware } from '#/orpc/middlewares'
-import { postPaginationCursorSchema } from '#/schemas/posts.schema'
+import {
+  legacyPostPaginationCursorSchema,
+  postPaginationCursorSchema,
+} from '#/schemas/posts.schema'
+import {
+  getCreatePostTimestampValues,
+  getUpdatePostTimestampValues,
+} from '#/lib/post-timestamps'
 
 type UpdatePostValues = Partial<
   Pick<
     typeof postsTable.$inferInsert,
-    'title' | 'coverImage' | 'content' | 'status'
+    'title' | 'coverImage' | 'content' | 'status' | 'publishedAt' | 'updatedAt'
   >
 >
 
@@ -27,6 +34,7 @@ const publishedPostSelect = {
   viewsCount: postsTable.viewsCount,
   likesCount: postsTable.likesCount,
   commentsCount: postsTable.commentsCount,
+  publishedAt: postsTable.publishedAt,
   createdAt: postsTable.createdAt,
   updatedAt: postsTable.updatedAt,
   author: {
@@ -47,14 +55,15 @@ const createdPostSelect = {
   viewsCount: postsTable.viewsCount,
   likesCount: postsTable.likesCount,
   commentsCount: postsTable.commentsCount,
+  publishedAt: postsTable.publishedAt,
   createdAt: postsTable.createdAt,
   updatedAt: postsTable.updatedAt,
 }
 
-const encodeCursor = (input: { createdAt: Date; id: string }) => {
+const encodeCursor = (input: { publishedAt: Date; id: string }) => {
   return Buffer.from(
     JSON.stringify({
-      createdAt: input.createdAt.toISOString(),
+      publishedAt: input.publishedAt.toISOString(),
       id: input.id,
     }),
     'utf8'
@@ -68,11 +77,17 @@ const decodeCursor = (cursor: string) => {
     ) as unknown
     const result = postPaginationCursorSchema.safeParse(value)
 
-    if (!result.success) {
-      return null
+    if (result.success) {
+      return result.data
     }
 
-    return result.data
+    const legacyResult = legacyPostPaginationCursorSchema.safeParse(value)
+
+    if (legacyResult.success) {
+      return legacyResult.data
+    }
+
+    return null
   } catch {
     return null
   }
@@ -90,9 +105,9 @@ const getManyPostsHandler = orpcBase.posts.getMany.handler(
 
     const paginationFilter = cursor
       ? or(
-          lt(postsTable.createdAt, cursor.createdAt),
+          lt(postsTable.publishedAt, cursor.publishedAt),
           and(
-            eq(postsTable.createdAt, cursor.createdAt),
+            eq(postsTable.publishedAt, cursor.publishedAt),
             lt(postsTable.id, cursor.id)
           )
         )
@@ -104,22 +119,30 @@ const getManyPostsHandler = orpcBase.posts.getMany.handler(
       .innerJoin(userTable, eq(postsTable.authorId, userTable.id))
       .where(
         paginationFilter
-          ? and(eq(postsTable.status, 'PUBLISHED'), paginationFilter)
-          : eq(postsTable.status, 'PUBLISHED')
+          ? and(
+              eq(postsTable.status, 'PUBLISHED'),
+              isNotNull(postsTable.publishedAt),
+              paginationFilter
+            )
+          : and(
+              eq(postsTable.status, 'PUBLISHED'),
+              isNotNull(postsTable.publishedAt)
+            )
       )
-      .orderBy(desc(postsTable.createdAt), desc(postsTable.id))
+      .orderBy(desc(postsTable.publishedAt), desc(postsTable.id))
       .limit(input.limit + 1)
 
     const hasMore = rows.length > input.limit
     const items = hasMore ? rows.slice(0, input.limit) : rows
     const lastItem = items.at(-1)
+    const lastPublishedAt = lastItem?.publishedAt
 
     return {
       items,
       nextCursor:
-        hasMore && lastItem
+        hasMore && lastItem && lastPublishedAt
           ? encodeCursor({
-              createdAt: lastItem.createdAt,
+              publishedAt: lastPublishedAt,
               id: lastItem.id,
             })
           : null,
@@ -172,6 +195,7 @@ const getOneByUsernameAndSlugHandler =
         viewsCount: row.viewsCount,
         likesCount: row.likesCount,
         commentsCount: row.commentsCount,
+        publishedAt: row.publishedAt,
         createdAt: row.createdAt,
         updatedAt: row.updatedAt,
         author: row.author,
@@ -212,6 +236,7 @@ const getEditableByUsernameAndSlugHandler = orpcBase
         viewsCount: row.viewsCount,
         likesCount: row.likesCount,
         commentsCount: row.commentsCount,
+        publishedAt: row.publishedAt,
         createdAt: row.createdAt,
         updatedAt: row.updatedAt,
       }
@@ -229,6 +254,7 @@ const createPostHandler = orpcBase
         ...input,
         slug,
         authorId: context.auth.user.id,
+        ...getCreatePostTimestampValues({ status: input.status }),
       })
       .returning(createdPostSelect)
 
@@ -246,6 +272,7 @@ const updatePostHandler = orpcBase
   .posts.update.handler(async ({ context, input, errors }) => {
     const [existingPost] = await context.db
       .select({
+        ...createdPostSelect,
         authorId: postsTable.authorId,
       })
       .from(postsTable)
@@ -278,8 +305,43 @@ const updatePostHandler = orpcBase
       updateValues.content = input.content
     }
 
-    if (input.status !== undefined) {
+    const hasContentChanges =
+      input.title !== undefined ||
+      input.coverImage !== undefined ||
+      input.content !== undefined
+
+    if (
+      input.status !== undefined &&
+      (input.status !== existingPost.status || hasContentChanges)
+    ) {
       updateValues.status = input.status
+    }
+
+    Object.assign(
+      updateValues,
+      getUpdatePostTimestampValues({
+        currentStatus: existingPost.status,
+        currentPublishedAt: existingPost.publishedAt,
+        hasContentChanges,
+        nextStatus: input.status,
+      })
+    )
+
+    if (Object.keys(updateValues).length === 0) {
+      return {
+        id: existingPost.id,
+        slug: existingPost.slug,
+        title: existingPost.title,
+        coverImage: existingPost.coverImage,
+        content: existingPost.content,
+        status: existingPost.status,
+        viewsCount: existingPost.viewsCount,
+        likesCount: existingPost.likesCount,
+        commentsCount: existingPost.commentsCount,
+        publishedAt: existingPost.publishedAt,
+        createdAt: existingPost.createdAt,
+        updatedAt: existingPost.updatedAt,
+      }
     }
 
     const [post] = await context.db
