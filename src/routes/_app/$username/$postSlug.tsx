@@ -46,21 +46,21 @@ export const Route = createFileRoute('/_app/$username/$postSlug')({
       ? parseMarkdownToWords(loaderData.post.content)
       : ''
     const ogUrl = loaderData
-      ? `/api/og?title=${encodeURIComponent(loaderData.post.title)}&description=${encodeURIComponent(description)}&authorName=${encodeURIComponent(loaderData.post.author.name)}&authorUsername=${encodeURIComponent(params.username)}${loaderData.author.image ? `&authorImage=${encodeURIComponent(loaderData.author.image)}` : ''}`
-      : '/api/og'
+      ? `${import.meta.env.VITE_APP_URL}/api/og?title=${encodeURIComponent(loaderData.post.title)}&description=${encodeURIComponent(description)}&authorName=${encodeURIComponent(loaderData.post.author.name)}&authorUsername=${encodeURIComponent(params.username)}${loaderData.author.image ? `&authorImage=${encodeURIComponent(loaderData.author.image)}` : ''}`
+      : `${import.meta.env.VITE_APP_URL}/api/og`
 
     return {
       meta: [
         { title },
         { name: 'description', content: description },
         // Open Graph
-        { name: 'og:title', content: title },
-        { name: 'og:description', content: description },
-        { name: 'og:site_name', content: 'marvticle' },
-        { name: 'og:image', content: ogUrl },
-        { name: 'og:type', content: 'website' },
+        { property: 'og:title', content: title },
+        { property: 'og:description', content: description },
+        { property: 'og:site_name', content: 'marvticle' },
+        { property: 'og:image', content: ogUrl },
+        { property: 'og:type', content: 'website' },
         {
-          name: 'og:url',
+          property: 'og:url',
           content: `${import.meta.env.VITE_APP_URL}/${params.username}/${params.postSlug}`,
         },
         // Twitter

@@ -55,6 +55,7 @@ export const postsTable = pgTable(
     ),
     uniqueIndex('posts_slug_idx').on(table.slug),
     index('posts_author_id_idx').on(table.authorId),
+    index('posts_status_idx').on(table.status),
     index('posts_feed_idx').on(
       table.status,
       table.publishedAt.desc(),

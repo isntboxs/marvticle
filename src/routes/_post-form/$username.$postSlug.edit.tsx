@@ -1,5 +1,6 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { useForm } from '@tanstack/react-form-start'
+import { useState } from 'react'
 
 import type { UpdatePostBodyInput } from '#/schemas/posts.schema'
 import {
@@ -36,15 +37,15 @@ export const Route = createFileRoute('/_post-form/$username/$postSlug/edit')({
         { name: 'description', content: description },
 
         // open graph
-        { name: 'og:title', content: title },
-        { name: 'og:description', content: description },
-        { name: 'og:type', content: 'website' },
-        { name: 'og:url', content: appUrl },
+        { property: 'og:title', content: title },
+        { property: 'og:description', content: description },
+        { property: 'og:type', content: 'website' },
+        { property: 'og:url', content: appUrl },
         {
-          name: 'og:image',
-          content: `${appUrl}/api/og-static?type=post&title=${encodeURIComponent('Rewrite It')}&description=${encodeURIComponent(description)}&label=${encodeURIComponent('New Post')}&pathname=${encodeURIComponent('new')}`,
+          property: 'og:image',
+          content: `${appUrl}/api/og-static?type=post&title=${encodeURIComponent('Rewrite It')}&description=${encodeURIComponent(description)}&label=${encodeURIComponent('Edit Post')}`,
         },
-        { name: 'og:site_name', content: import.meta.env.VITE_APP_NAME },
+        { property: 'og:site_name', content: import.meta.env.VITE_APP_NAME },
 
         // twitter
         { name: 'twitter:card', content: 'summary_large_image' },
@@ -53,7 +54,7 @@ export const Route = createFileRoute('/_post-form/$username/$postSlug/edit')({
         { name: 'twitter:url', content: appUrl },
         {
           name: 'twitter:image',
-          content: `${appUrl}/api/og-static?type=post&title=${encodeURIComponent('Rewrite It')}&description=${encodeURIComponent(description)}&label=${encodeURIComponent('New Post')}&pathname=${encodeURIComponent('new')}`,
+          content: `${appUrl}/api/og-static?type=post&title=${encodeURIComponent('Rewrite It')}&description=${encodeURIComponent(description)}&label=${encodeURIComponent('Edit Post')}`,
         },
       ],
     }
@@ -72,6 +73,9 @@ const onSubmitMeta: FormMeta = {
 function RouteComponent() {
   const params = Route.useParams()
   const { queryClient, orpc } = Route.useRouteContext()
+  const [activeSubmitAction, setActiveSubmitAction] = useState<
+    FormMeta['submitAction'] | null
+  >(null)
 
   const { data: post } = useEditablePostDetail(params.username, params.postSlug)
 
@@ -118,12 +122,22 @@ function RouteComponent() {
     },
   })
 
+  const handleSubmitAction = async (submitAction: FormMeta['submitAction']) => {
+    setActiveSubmitAction(submitAction)
+
+    try {
+      await form.handleSubmit({ submitAction })
+    } finally {
+      setActiveSubmitAction(null)
+    }
+  }
+
   const handlePublish = () => {
-    void form.handleSubmit({ submitAction: 'publish' })
+    void handleSubmitAction('publish')
   }
 
   const handleSave = () => {
-    void form.handleSubmit({ submitAction: 'save' })
+    void handleSubmitAction('save')
   }
 
   return (
@@ -271,6 +285,7 @@ function RouteComponent() {
               const canSubmitNow = !!canSubmit
               const formIsSubmitting = !!isSubmitting
               const isPending = formIsSubmitting || updatePostMutation.isPending
+              const isPublishing = isPending && activeSubmitAction === 'publish'
 
               return (
                 <Button
@@ -280,7 +295,7 @@ function RouteComponent() {
                   onClick={handlePublish}
                   disabled={!canSubmitNow || isPending}
                 >
-                  {isPending ? (
+                  {isPublishing ? (
                     <>
                       <Spinner />
                       Updating...
@@ -299,6 +314,7 @@ function RouteComponent() {
               const canSubmitNow = !!canSubmit
               const formIsSubmitting = !!isSubmitting
               const isPending = formIsSubmitting || updatePostMutation.isPending
+              const isSaving = isPending && activeSubmitAction === 'save'
 
               return (
                 <Button
@@ -308,7 +324,7 @@ function RouteComponent() {
                   onClick={handleSave}
                   disabled={!canSubmitNow || isPending}
                 >
-                  {isPending ? (
+                  {isSaving ? (
                     <>
                       <Spinner />
                       Saving...

@@ -42,15 +42,15 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
         { name: 'description', content: description },
 
         // open graph
-        { name: 'og:title', content: title },
-        { name: 'og:description', content: description },
-        { name: 'og:type', content: 'website' },
-        { name: 'og:url', content: appUrl },
+        { property: 'og:title', content: title },
+        { property: 'og:description', content: description },
+        { property: 'og:type', content: 'website' },
+        { property: 'og:url', content: appUrl },
         {
-          name: 'og:image',
+          property: 'og:image',
           content: `${appUrl}/api/og-static?type=home&title=${encodeURIComponent('Write Anything That Matters')}&description=${encodeURIComponent(description)}`,
         },
-        { name: 'og:site_name', content: import.meta.env.VITE_APP_NAME },
+        { property: 'og:site_name', content: import.meta.env.VITE_APP_NAME },
 
         // twitter
         { name: 'twitter:card', content: 'summary_large_image' },

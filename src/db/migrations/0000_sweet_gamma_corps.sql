@@ -36,13 +36,6 @@ CREATE TABLE "user" (
 	"username" text NOT NULL,
 	"display_username" text,
 	"image" text,
-	"banner" text,
-	"bio" text,
-	"pronouns" text,
-	"location" text,
-	"education" text,
-	"work" text,
-	"verified" boolean DEFAULT false NOT NULL,
 	"role" text,
 	"banned" boolean DEFAULT false,
 	"ban_reason" text,
@@ -73,13 +66,11 @@ CREATE TABLE "posts" (
 	"views_count" integer DEFAULT 0 NOT NULL,
 	"likes_count" integer DEFAULT 0 NOT NULL,
 	"comments_count" integer DEFAULT 0 NOT NULL,
-	"published_at" timestamp,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
 	CONSTRAINT "posts_views_count_non_negative" CHECK ("posts"."views_count" >= 0),
 	CONSTRAINT "posts_likes_count_non_negative" CHECK ("posts"."likes_count" >= 0),
-	CONSTRAINT "posts_comments_count_non_negative" CHECK ("posts"."comments_count" >= 0),
-	CONSTRAINT "posts_published_at_matches_status" CHECK (("posts"."status" = 'PUBLISHED' AND "posts"."published_at" IS NOT NULL) OR ("posts"."status" <> 'PUBLISHED' AND "posts"."published_at" IS NULL))
+	CONSTRAINT "posts_comments_count_non_negative" CHECK ("posts"."comments_count" >= 0)
 );
 --> statement-breakpoint
 ALTER TABLE "account" ADD CONSTRAINT "account_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -90,4 +81,4 @@ CREATE INDEX "session_userId_idx" ON "session" USING btree ("user_id");--> state
 CREATE INDEX "verification_identifier_idx" ON "verification" USING btree ("identifier");--> statement-breakpoint
 CREATE UNIQUE INDEX "posts_slug_idx" ON "posts" USING btree ("slug");--> statement-breakpoint
 CREATE INDEX "posts_author_id_idx" ON "posts" USING btree ("author_id");--> statement-breakpoint
-CREATE INDEX "posts_feed_idx" ON "posts" USING btree ("status","published_at" DESC NULLS LAST,"id" DESC NULLS LAST);
+CREATE INDEX "posts_status_idx" ON "posts" USING btree ("status");

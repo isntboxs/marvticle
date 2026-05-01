@@ -1,6 +1,6 @@
 {
-  "id": "9b5c26ba-1967-422e-b525-a02682a75401",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "0052a1f3-2882-4957-afca-e81d567dc092",
+  "prevId": "9b5c26ba-1967-422e-b525-a02682a75401",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -272,6 +272,49 @@
           "primaryKey": false,
           "notNull": false
         },
+        "banner": {
+          "name": "banner",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bio": {
+          "name": "bio",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pronouns": {
+          "name": "pronouns",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "location": {
+          "name": "location",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "education": {
+          "name": "education",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "work": {
+          "name": "work",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "verified": {
+          "name": "verified",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
         "role": {
           "name": "role",
           "type": "text",
@@ -469,6 +512,12 @@
           "notNull": true,
           "default": 0
         },
+        "published_at": {
+          "name": "published_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
@@ -529,6 +578,33 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
+        },
+        "posts_feed_idx": {
+          "name": "posts_feed_idx",
+          "columns": [
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "published_at",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            },
+            {
+              "expression": "id",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -557,6 +633,10 @@
         "posts_comments_count_non_negative": {
           "name": "posts_comments_count_non_negative",
           "value": "\"posts\".\"comments_count\" >= 0"
+        },
+        "posts_published_at_matches_status": {
+          "name": "posts_published_at_matches_status",
+          "value": "(\"posts\".\"status\" = 'PUBLISHED' AND \"posts\".\"published_at\" IS NOT NULL) OR (\"posts\".\"status\" <> 'PUBLISHED' AND \"posts\".\"published_at\" IS NULL)"
         }
       },
       "isRLSEnabled": false

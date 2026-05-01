@@ -7,19 +7,20 @@ const GridPattern = ({
   H?: number
   GRID_SIZE?: number
 }) => {
+  const safeGridSize =
+    Number.isFinite(GRID_SIZE) && GRID_SIZE > 0 ? GRID_SIZE : 16
   let svgParts = ''
-
   // vertical lines
-  for (let x = 0; x <= W; x += GRID_SIZE) {
+  for (let x = 0; x <= W; x += safeGridSize) {
     svgParts += `<line x1="${x}" y1="0" x2="${x}" y2="${H}" stroke="rgba(255,255,255,0.5)" stroke-width="0.5"/>`
   }
   // horizontal lines
-  for (let y = 0; y <= H; y += GRID_SIZE) {
+  for (let y = 0; y <= H; y += safeGridSize) {
     svgParts += `<line x1="0" y1="${y}" x2="${W}" y2="${y}" stroke="rgba(255,255,255,0.5)" stroke-width="0.5"/>`
   }
   // dots di setiap intersection
-  for (let x = 0; x <= W; x += GRID_SIZE) {
-    for (let y = 0; y <= H; y += GRID_SIZE) {
+  for (let x = 0; x <= W; x += safeGridSize) {
+    for (let y = 0; y <= H; y += safeGridSize) {
       svgParts += `<circle cx="${x}" cy="${y}" r="1.5" fill="rgba(255,255,255,0.5)"/>`
     }
   }
