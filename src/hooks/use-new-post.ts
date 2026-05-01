@@ -25,16 +25,26 @@ export const useNewPost = ({
     orpc.posts.create.mutationOptions({
       onSuccess: (data) => {
         const isPublished = data.status === 'PUBLISHED'
+        const isDraft = data.status === 'DRAFT'
 
         void queryClient.invalidateQueries({
           queryKey: postsInfiniteQueryOptions(DEFAULT_POSTS_LIMIT).queryKey,
         })
 
-        toast.success(isPublished ? 'Post published' : 'Draft saved', {
-          description: isPublished
-            ? 'Your article is now live on the feed.'
-            : 'Your draft is saved and only visible to you.',
-        })
+        toast.success(
+          isPublished
+            ? 'Post published'
+            : isDraft
+              ? 'Draft saved'
+              : 'Post archived',
+          {
+            description: isPublished
+              ? 'Your article is now live on the feed.'
+              : isDraft
+                ? 'Your draft is saved and only visible to you.'
+                : 'Your post has been archived and is hidden from the public feed.',
+          }
+        )
 
         void navigate({
           to: '/$username/$postSlug',
