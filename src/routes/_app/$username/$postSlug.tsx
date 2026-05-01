@@ -25,6 +25,7 @@ import { authorProfileQueryOptions } from '#/hooks/use-author-profile'
 import { postDetailQueryOptions } from '#/hooks/use-post-detail'
 import { cn } from '#/lib/utils'
 import { getStorageUrl } from '#/utils/storage'
+import { parseMarkdownToWords } from '#/utils/parse-markdown.ts'
 
 export const Route = createFileRoute('/_app/$username/$postSlug')({
   loader: async ({ context: { queryClient }, params }) => {
@@ -37,15 +38,43 @@ export const Route = createFileRoute('/_app/$username/$postSlug')({
 
     return { post, author }
   },
-  head: ({ loaderData }) => ({
-    meta: [
-      {
-        title: loaderData
-          ? `${loaderData.post.title} | marvticle`
-          : 'Post not found | marvticle',
-      },
-    ],
-  }),
+  head: ({ loaderData, params }) => {
+    const title = loaderData
+      ? `${loaderData.post.title} | marvticle`
+      : 'Post not found | marvticle'
+    const description = loaderData
+      ? parseMarkdownToWords(loaderData.post.content)
+      : ''
+    const ogUrl = loaderData
+      ? `/api/og?title=${encodeURIComponent(loaderData.post.title)}&description=${encodeURIComponent(description)}&authorName=${encodeURIComponent(loaderData.post.author.name)}&authorUsername=${encodeURIComponent(params.username)}${loaderData.author.image ? `&authorImage=${encodeURIComponent(loaderData.author.image)}` : ''}`
+      : '/api/og'
+
+    return {
+      meta: [
+        { title },
+        { name: 'description', content: description },
+        // Open Graph
+        { name: 'og:title', content: title },
+        { name: 'og:description', content: description },
+        { name: 'og:site_name', content: 'marvticle' },
+        { name: 'og:image', content: ogUrl },
+        { name: 'og:type', content: 'website' },
+        {
+          name: 'og:url',
+          content: `${import.meta.env.VITE_APP_URL}/${params.username}/${params.postSlug}`,
+        },
+        // Twitter
+        { name: 'twitter:title', content: title },
+        { name: 'twitter:description', content: description },
+        {
+          name: 'twitter:url',
+          content: `${import.meta.env.VITE_APP_URL}/${params.username}/${params.postSlug}`,
+        },
+        { name: 'twitter:card', content: 'summary_large_image' },
+        { name: 'twitter:image', content: ogUrl },
+      ],
+    }
+  },
   pendingComponent: PostDetailPending,
   component: RouteComponent,
 })

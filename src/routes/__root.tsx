@@ -24,26 +24,52 @@ interface MyRouterContext {
 }
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
-  head: () => ({
-    meta: [
-      {
-        charSet: 'utf-8',
-      },
-      {
-        name: 'viewport',
-        content: 'width=device-width, initial-scale=1',
-      },
-      {
-        title: 'marvticle',
-      },
-    ],
-    links: [
-      {
-        rel: 'stylesheet',
-        href: appCss,
-      },
-    ],
-  }),
+  head: () => {
+    const title = `${import.meta.env.VITE_APP_NAME} — Write Anything That Matters`
+    const description = `Not just blogs. Not just code. Just write.`
+    const appUrl = import.meta.env.VITE_APP_URL
+
+    return {
+      meta: [
+        {
+          charSet: 'utf-8',
+        },
+        {
+          name: 'viewport',
+          content: 'width=device-width, initial-scale=1',
+        },
+        { title: title },
+        { name: 'description', content: description },
+
+        // open graph
+        { name: 'og:title', content: title },
+        { name: 'og:description', content: description },
+        { name: 'og:type', content: 'website' },
+        { name: 'og:url', content: appUrl },
+        {
+          name: 'og:image',
+          content: `${appUrl}/api/og-static?type=home&title=${encodeURIComponent('Write Anything That Matters')}&description=${encodeURIComponent(description)}`,
+        },
+        { name: 'og:site_name', content: import.meta.env.VITE_APP_NAME },
+
+        // twitter
+        { name: 'twitter:card', content: 'summary_large_image' },
+        { name: 'twitter:title', content: title },
+        { name: 'twitter:description', content: description },
+        { name: 'twitter:url', content: appUrl },
+        {
+          name: 'twitter:image',
+          content: `${appUrl}/api/og-static?type=home&title=${encodeURIComponent('Write Anything That Matters')}&description=${encodeURIComponent(description)}`,
+        },
+      ],
+      links: [
+        {
+          rel: 'stylesheet',
+          href: appCss,
+        },
+      ],
+    }
+  },
 
   beforeLoad: async () => {
     const auth = await getAuthFn()
