@@ -12,12 +12,14 @@ import {
 } from '@/components/og-components'
 import { getOGOptions } from '#/utils/get-og-fonts'
 
-const OG_TYPES = ['home', 'feed'] as const
+const OG_TYPES = ['home', 'feed', 'post'] as const
 
 const ogStaticSchema = z.object({
   type: z.enum(OG_TYPES),
   title: z.string().optional(),
   description: z.string().optional(),
+  label: z.string().optional(),
+  pathname: z.string().optional(),
 })
 
 export const Route = createFileRoute('/api/og-static')({
@@ -39,6 +41,16 @@ export const Route = createFileRoute('/api/og-static')({
           switch (parsed.data.type) {
             case 'feed':
               return new ImageResponse(<OGFeed />, options)
+            case 'post':
+              return new ImageResponse(
+                <OGNewPost
+                  title={parsed.data.title}
+                  description={parsed.data.description}
+                  label={parsed.data.label}
+                  pathname={parsed.data.pathname}
+                />,
+                options
+              )
             default:
               return new ImageResponse(
                 <OGHome
@@ -173,6 +185,62 @@ function OGFeed() {
           </div>
 
           <OGDomain />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function OGNewPost({
+  title,
+  description,
+  label,
+  pathname,
+}: {
+  title?: string
+  description?: string
+  label?: string
+  pathname?: string
+}) {
+  return (
+    <div
+      tw="flex flex-col w-full h-full p-16"
+      style={{
+        fontFamily: 'Inter, sans-serif',
+        background: '#1c1c1c',
+        position: 'relative',
+      }}
+    >
+      <GridPattern />
+
+      <OGVignetteOverlay />
+
+      <div tw="flex flex-col w-full h-full" style={{ position: 'relative' }}>
+        {/* header */}
+        <div tw="flex items-center justify-between">
+          <OGLogo name="Marvticle" />
+
+          <OGBadge label={label} />
+        </div>
+
+        {/* main content */}
+        <div tw="flex flex-col flex-1 justify-center">
+          <OGAccentLine />
+          <h1
+            tw="text-6xl font-bold text-white"
+            style={{ lineHeight: 1.2, letterSpacing: '-0.02em', margin: 0 }}
+          >
+            {title}
+          </h1>
+
+          <p tw="text-lg text-neutral-500" style={{ margin: '16px 0 0 0' }}>
+            {description}
+          </p>
+        </div>
+
+        {/* footer */}
+        <div tw="flex items-center justify-center w-full">
+          <OGDomain pathname={pathname} />
         </div>
       </div>
     </div>

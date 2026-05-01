@@ -109,8 +109,14 @@ const OGAccentLine = ({ single }: { single?: boolean }) => {
   )
 }
 
-const OGDomain = ({ pathname }: { pathname?: string }) => {
-  if (pathname) {
+const OGDomain = ({
+  pathname,
+  isDomain = true,
+}: {
+  pathname?: string
+  isDomain?: boolean
+}) => {
+  if (!isDomain) {
     return (
       <div
         tw="flex items-center text-sm text-white p-2"
@@ -124,7 +130,11 @@ const OGDomain = ({ pathname }: { pathname?: string }) => {
     )
   }
 
-  return <span tw="text-sm text-neutral-50">article.marvagency.net</span>
+  return (
+    <span tw="text-sm text-neutral-50">
+      article.marvagency.net{pathname && `/${pathname}`}
+    </span>
+  )
 }
 
 export {

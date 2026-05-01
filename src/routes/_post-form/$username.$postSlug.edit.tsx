@@ -25,6 +25,39 @@ export const Route = createFileRoute('/_post-form/$username/$postSlug/edit')({
       editablePostDetailQueryOptions(params.username, params.postSlug)
     )
   },
+  head: () => {
+    const title = `Edit Post | ${import.meta.env.VITE_APP_NAME} — Write Anything That Matters`
+    const description = `Nothing’s final. Change anything.`
+    const appUrl = import.meta.env.VITE_APP_URL
+
+    return {
+      meta: [
+        { title: title },
+        { name: 'description', content: description },
+
+        // open graph
+        { name: 'og:title', content: title },
+        { name: 'og:description', content: description },
+        { name: 'og:type', content: 'website' },
+        { name: 'og:url', content: appUrl },
+        {
+          name: 'og:image',
+          content: `${appUrl}/api/og-static?type=post&title=${encodeURIComponent('Rewrite It')}&description=${encodeURIComponent(description)}&label=${encodeURIComponent('New Post')}&pathname=${encodeURIComponent('new')}`,
+        },
+        { name: 'og:site_name', content: import.meta.env.VITE_APP_NAME },
+
+        // twitter
+        { name: 'twitter:card', content: 'summary_large_image' },
+        { name: 'twitter:title', content: title },
+        { name: 'twitter:description', content: description },
+        { name: 'twitter:url', content: appUrl },
+        {
+          name: 'twitter:image',
+          content: `${appUrl}/api/og-static?type=post&title=${encodeURIComponent('Rewrite It')}&description=${encodeURIComponent(description)}&label=${encodeURIComponent('New Post')}&pathname=${encodeURIComponent('new')}`,
+        },
+      ],
+    }
+  },
   component: RouteComponent,
 })
 
