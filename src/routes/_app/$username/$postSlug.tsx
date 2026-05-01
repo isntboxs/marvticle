@@ -1,9 +1,9 @@
 import { ChatCircleIcon, ThumbsUpIcon } from '@phosphor-icons/react'
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { createFileRoute } from '@tanstack/react-router'
+import { Link, createFileRoute } from '@tanstack/react-router'
 import { formatDate, formatDistanceToNowStrict } from 'date-fns'
-import { EyeIcon, ShareIcon } from 'lucide-react'
-import { Suspense, useState } from 'react'
+import { AlertCircleIcon, EyeIcon, ShareIcon } from 'lucide-react'
+import { Activity, Suspense, useState } from 'react'
 import type { ReactNode } from 'react'
 
 import type { RouterOutputs } from '#/orpc/routers'
@@ -14,14 +14,18 @@ import {
 } from '#/components/author-card'
 import { MarkdownRenderer } from '#/components/markdown-renderer'
 import { PostShareDialog } from '#/components/post-share-dialog'
+import { Alert, AlertDescription, AlertTitle } from '#/components/ui/alert'
 import { AspectRatio } from '#/components/ui/aspect-ratio'
 import { Button } from '#/components/ui/button'
+import { ButtonGroup } from '#/components/ui/button-group'
 import { Separator } from '#/components/ui/separator'
 import { Skeleton } from '#/components/ui/skeleton'
 import { UserAvatar } from '#/components/user-avatar'
 import { authorProfileQueryOptions } from '#/hooks/use-author-profile'
 import { postDetailQueryOptions } from '#/hooks/use-post-detail'
+import { cn } from '#/lib/utils'
 import { getStorageUrl } from '#/utils/storage'
+import { parseMarkdownToWords } from '#/utils/parse-markdown.ts'
 
 export const Route = createFileRoute('/_app/$username/$postSlug')({
   loader: async ({ context: { queryClient }, params }) => {
@@ -34,15 +38,43 @@ export const Route = createFileRoute('/_app/$username/$postSlug')({
 
     return { post, author }
   },
-  head: ({ loaderData }) => ({
-    meta: [
-      {
-        title: loaderData
-          ? `${loaderData.post.title} | marvticle`
-          : 'Post not found | marvticle',
-      },
-    ],
-  }),
+  head: ({ loaderData, params }) => {
+    const title = loaderData
+      ? `${loaderData.post.title} | marvticle`
+      : 'Post not found | marvticle'
+    const description = loaderData
+      ? parseMarkdownToWords(loaderData.post.content)
+      : ''
+    const ogUrl = loaderData
+      ? `${import.meta.env.VITE_APP_URL}/api/og?title=${encodeURIComponent(loaderData.post.title)}&description=${encodeURIComponent(description)}&authorName=${encodeURIComponent(loaderData.post.author.name)}&authorUsername=${encodeURIComponent(params.username)}${loaderData.author.image ? `&authorImage=${encodeURIComponent(loaderData.author.image)}` : ''}`
+      : `${import.meta.env.VITE_APP_URL}/api/og`
+
+    return {
+      meta: [
+        { title },
+        { name: 'description', content: description },
+        // Open Graph
+        { property: 'og:title', content: title },
+        { property: 'og:description', content: description },
+        { property: 'og:site_name', content: 'marvticle' },
+        { property: 'og:image', content: ogUrl },
+        { property: 'og:type', content: 'website' },
+        {
+          property: 'og:url',
+          content: `${import.meta.env.VITE_APP_URL}/${params.username}/${params.postSlug}`,
+        },
+        // Twitter
+        { name: 'twitter:title', content: title },
+        { name: 'twitter:description', content: description },
+        {
+          name: 'twitter:url',
+          content: `${import.meta.env.VITE_APP_URL}/${params.username}/${params.postSlug}`,
+        },
+        { name: 'twitter:card', content: 'summary_large_image' },
+        { name: 'twitter:image', content: ogUrl },
+      ],
+    }
+  },
   pendingComponent: PostDetailPending,
   component: RouteComponent,
 })
@@ -50,6 +82,7 @@ export const Route = createFileRoute('/_app/$username/$postSlug')({
 function RouteComponent() {
   const [openShareDialog, setOpenShareDialog] = useState<boolean>(false)
 
+  const { auth } = Route.useRouteContext()
   const { username, postSlug } = Route.useParams()
 
   const { data: post } = useSuspenseQuery(
@@ -58,6 +91,16 @@ function RouteComponent() {
   const authorQuery = useSuspenseQuery(authorProfileQueryOptions(username))
 
   const authorUsername = post.author.username
+  const publishedAt = post.publishedAt ? new Date(post.publishedAt) : null
+  const updatedAt = new Date(post.updatedAt)
+  const showUpdatedAt =
+    publishedAt !== null && updatedAt.getTime() > publishedAt.getTime()
+  const unpublishedStatusLabel =
+    post.status === 'DRAFT'
+      ? 'Draft'
+      : post.status === 'ARCHIVED'
+        ? 'Archived'
+        : 'Unpublished'
 
   const handleShareClick = () => {
     setOpenShareDialog((prev) => !prev)
@@ -91,6 +134,24 @@ function RouteComponent() {
         />
 
         <article className="flex min-w-0 flex-col">
+          <Activity mode={post.status === 'PUBLISHED' ? 'hidden' : 'visible'}>
+            <div className="-mt-2 mb-4 lg:mt-0">
+              <Alert
+                variant="destructive"
+                className="border-destructive/30 bg-destructive/15"
+              >
+                <AlertCircleIcon />
+
+                <AlertTitle>Unpublished Post.</AlertTitle>
+
+                <AlertDescription>
+                  This URL is public but secret, so share at your own
+                  discretion.
+                </AlertDescription>
+              </Alert>
+            </div>
+          </Activity>
+
           {post.coverImage && (
             <AspectRatio ratio={2.38 / 1} className="overflow-hidden border">
               <img
@@ -101,40 +162,71 @@ function RouteComponent() {
             </AspectRatio>
           )}
 
-          <header className="my-6 flex min-w-0 flex-col gap-6 px-6">
-            <div className="flex items-center gap-3">
-              <UserAvatar
-                image={post.author.image}
-                name={post.author.name}
-                className="size-10"
+          <header
+            className={cn(
+              'my-6 flex min-w-0 flex-col gap-6 px-6',
+              !post.coverImage && 'mt-0'
+            )}
+          >
+            <div className="flex max-md:flex-col max-md:gap-y-6 md:items-center md:justify-between">
+              <PostActions
+                authUsername={auth?.user.username}
+                authorUsername={authorUsername}
+                slug={post.slug}
+                status={post.status}
+                className="md:hidden"
               />
 
-              <div className="flex flex-col gap-0.5">
-                <div className="flex items-center gap-2">
-                  <p className="text-base font-semibold">{post.author.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    @{authorUsername}
-                  </p>
-                </div>
+              <div className="flex items-center gap-3">
+                <UserAvatar
+                  image={post.author.image}
+                  name={post.author.name}
+                  className="size-10"
+                />
 
-                <div className="flex items-center gap-2">
-                  <p className="text-xs text-muted-foreground">
-                    Posted on{' '}
-                    {formatDate(new Date(post.createdAt), 'MMM d, yyyy')}
-                  </p>
+                <div className="flex flex-col gap-0.5">
+                  <div className="flex items-center gap-2">
+                    <p className="text-base font-semibold">
+                      {post.author.name}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      @{authorUsername}
+                    </p>
+                  </div>
 
-                  <Separator
-                    orientation="vertical"
-                    className="rounded-full data-vertical:h-1 data-vertical:w-1 data-vertical:self-center"
-                  />
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs text-muted-foreground">
+                      {publishedAt
+                        ? `Posted on ${formatDate(publishedAt, 'MMM d, yyyy')}`
+                        : unpublishedStatusLabel}
+                    </p>
 
-                  <p className="text-xs text-muted-foreground">
-                    {formatDistanceToNowStrict(new Date(post.updatedAt), {
-                      addSuffix: true,
-                    })}
-                  </p>
+                    {showUpdatedAt && (
+                      <>
+                        <Separator
+                          orientation="vertical"
+                          className="rounded-full data-vertical:h-1 data-vertical:w-1 data-vertical:self-center"
+                        />
+
+                        <p className="text-xs text-muted-foreground">
+                          Updated{' '}
+                          {formatDistanceToNowStrict(updatedAt, {
+                            addSuffix: true,
+                          })}
+                        </p>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
+
+              <PostActions
+                authUsername={auth?.user.username}
+                authorUsername={authorUsername}
+                slug={post.slug}
+                status={post.status}
+                className="hidden md:flex"
+              />
             </div>
 
             <h1 className="mb-4 text-3xl leading-tight font-bold tracking-tight wrap-break-word sm:text-4xl lg:text-5xl">
@@ -233,12 +325,12 @@ function PostDetailLayout({
   rightAside?: ReactNode
 }>) {
   return (
-    <div className="container mx-auto grid w-full max-w-348 grid-cols-1 gap-4 px-4 py-20 md:px-6 xl:grid-cols-[minmax(0,3rem)_minmax(0,1fr)_minmax(0,24rem)]">
-      <aside className="hidden min-w-0 xl:sticky xl:top-20 xl:block xl:max-h-[calc(100svh-5rem)] xl:self-start xl:overflow-y-auto">
+    <div className="container mx-auto grid w-full max-w-348 grid-cols-1 gap-4 py-18 md:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,18rem)] xl:grid-cols-[minmax(0,3rem)_minmax(0,1fr)_minmax(0,24rem)]">
+      <aside className="hidden min-w-0 xl:sticky xl:top-18 xl:block xl:max-h-[calc(100svh-5rem)] xl:self-start xl:overflow-y-auto">
         {leftAside}
       </aside>
       <div className="min-w-0">{children}</div>
-      <aside className="hidden min-w-0 xl:sticky xl:top-20 xl:block xl:max-h-[calc(100svh-5rem)] xl:self-start xl:overflow-y-auto">
+      <aside className="hidden min-w-0 lg:block xl:sticky xl:top-18 xl:max-h-[calc(100svh-5rem)] xl:self-start xl:overflow-y-auto">
         {rightAside}
       </aside>
     </div>
@@ -309,5 +401,40 @@ function AuthorRelatedPostsSidebar({
 
       {/* More from this author Card */}
     </div>
+  )
+}
+
+type PostActionsProps = {
+  authUsername: string | undefined
+  authorUsername: string
+  slug: string
+  status: RouterOutputs['posts']['getMany']['items'][number]['status']
+  className?: string
+}
+
+const PostActions = ({
+  authUsername,
+  authorUsername,
+  slug,
+  status,
+  className,
+}: PostActionsProps) => {
+  return (
+    <Activity mode={authUsername === authorUsername ? 'visible' : 'hidden'}>
+      <ButtonGroup className={cn(className)}>
+        <Button variant="outline" asChild>
+          <Link
+            to="/$username/$postSlug/edit"
+            params={{ username: authorUsername, postSlug: slug }}
+          >
+            Edit
+          </Link>
+        </Button>
+        <Activity mode={status !== 'PUBLISHED' ? 'hidden' : 'visible'}>
+          <Button variant="outline">Manage</Button>
+        </Activity>
+        <Button variant="outline">Stats</Button>
+      </ButtonGroup>
+    </Activity>
   )
 }

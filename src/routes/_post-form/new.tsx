@@ -1,5 +1,6 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { useForm } from '@tanstack/react-form-start'
+import { useState } from 'react'
 
 import type { CreatePostBodyInput } from '#/schemas/posts.schema'
 import { ImageDropzone } from '#/components/image-dropzone'
@@ -16,18 +17,62 @@ import { createPostBodySchema } from '#/schemas/posts.schema'
 import { getStorageUrl } from '#/utils/storage'
 
 export const Route = createFileRoute('/_post-form/new')({
-  head: () => ({
-    meta: [
-      {
-        title: 'Create post | marvticle',
-      },
-    ],
-  }),
+  head: () => {
+    const title = `New Post | ${import.meta.env.VITE_APP_NAME} — Write Anything That Matters`
+    const description = `Start with a thought. See where it goes.`
+    const appUrl = import.meta.env.VITE_APP_URL
+
+    return {
+      meta: [
+        { title: title },
+        { name: 'description', content: description },
+
+        // open graph
+        { property: 'og:title', content: title },
+        { property: 'og:description', content: description },
+        { property: 'og:type', content: 'website' },
+        { property: 'og:url', content: appUrl },
+        {
+          property: 'og:image',
+          content: `${appUrl}/api/og-static?type=post&title=${encodeURIComponent('What’s on your mind?')}&description=${encodeURIComponent(description)}&label=${encodeURIComponent('New Post')}&pathname=${encodeURIComponent('new')}`,
+        },
+        { property: 'og:site_name', content: import.meta.env.VITE_APP_NAME },
+
+        // twitter
+        { name: 'twitter:card', content: 'summary_large_image' },
+        { name: 'twitter:title', content: title },
+        { name: 'twitter:description', content: description },
+        { name: 'twitter:url', content: appUrl },
+        {
+          name: 'twitter:image',
+          content: `${appUrl}/api/og-static?type=post&title=${encodeURIComponent('What’s on your mind?')}&description=${encodeURIComponent(description)}&label=${encodeURIComponent('New Post')}&pathname=${encodeURIComponent('new')}`,
+        },
+      ],
+    }
+  },
   component: RouteComponent,
 })
 
+type FormMeta = {
+  submitAction: 'publish' | 'save'
+}
+
+const onSubmitMeta: FormMeta = {
+  submitAction: 'publish',
+}
+
+const defaultValues: CreatePostBodyInput = {
+  title: '',
+  coverImage: '',
+  content: '',
+  status: 'PUBLISHED',
+}
+
 function RouteComponent() {
   const { auth, queryClient, orpc } = Route.useRouteContext()
+  const [activeSubmitAction, setActiveSubmitAction] = useState<
+    FormMeta['submitAction'] | null
+  >(null)
 
   const createPostMutation = useNewPost({
     queryClient,
@@ -35,23 +80,39 @@ function RouteComponent() {
     username: auth.user.username,
   })
 
-  const defaultValues: CreatePostBodyInput = {
-    title: '',
-    coverImage: '',
-    content: '',
-    status: 'PUBLISHED',
-  }
-
   const form = useForm({
     defaultValues,
+    onSubmitMeta,
     validators: {
       onChange: createPostBodySchema,
       onSubmit: createPostBodySchema,
     },
-    onSubmit: async ({ value }) => {
-      await createPostMutation.mutateAsync(value)
+    onSubmit: async ({ value, meta }) => {
+      if (meta.submitAction === 'save') {
+        await createPostMutation.mutateAsync({ ...value, status: 'DRAFT' })
+      } else {
+        await createPostMutation.mutateAsync(value)
+      }
     },
   })
+
+  const handleSubmitAction = async (submitAction: FormMeta['submitAction']) => {
+    setActiveSubmitAction(submitAction)
+
+    try {
+      await form.handleSubmit({ submitAction })
+    } finally {
+      setActiveSubmitAction(null)
+    }
+  }
+
+  const handlePublish = () => {
+    void handleSubmitAction('publish')
+  }
+
+  const handleSave = () => {
+    void handleSubmitAction('save')
+  }
 
   return (
     <>
@@ -63,7 +124,6 @@ function RouteComponent() {
             onSubmit={(e) => {
               e.preventDefault()
               e.stopPropagation()
-              void form.handleSubmit()
             }}
           >
             <FieldGroup>
@@ -196,24 +256,55 @@ function RouteComponent() {
           <form.Subscribe
             selector={(state) => [state.canSubmit, state.isSubmitting]}
             children={([canSubmit, isSubmitting]) => {
-              const canSubmitNow = canSubmit ?? false
-              const formIsSubmitting = isSubmitting ?? false
+              const canSubmitNow = !!canSubmit
+              const formIsSubmitting = !!isSubmitting
               const isPending = formIsSubmitting || createPostMutation.isPending
+              const isPublishing = isPending && activeSubmitAction === 'publish'
 
               return (
                 <Button
                   form="create-post-form"
                   type="submit"
                   size="lg"
+                  onClick={handlePublish}
                   disabled={!canSubmitNow || isPending}
                 >
-                  {isPending ? (
+                  {isPublishing ? (
                     <>
                       <Spinner />
                       Publishing...
                     </>
                   ) : (
                     'Publish post'
+                  )}
+                </Button>
+              )
+            }}
+          />
+
+          <form.Subscribe
+            selector={(state) => [state.canSubmit, state.isSubmitting]}
+            children={([canSubmit, isSubmitting]) => {
+              const canSubmitNow = !!canSubmit
+              const formIsSubmitting = !!isSubmitting
+              const isPending = formIsSubmitting || createPostMutation.isPending
+              const isSaving = isPending && activeSubmitAction === 'save'
+
+              return (
+                <Button
+                  form="create-post-form"
+                  type="submit"
+                  size="lg"
+                  onClick={handleSave}
+                  disabled={!canSubmitNow || isPending}
+                >
+                  {isSaving ? (
+                    <>
+                      <Spinner />
+                      Saving...
+                    </>
+                  ) : (
+                    'Save as draft'
                   )}
                 </Button>
               )

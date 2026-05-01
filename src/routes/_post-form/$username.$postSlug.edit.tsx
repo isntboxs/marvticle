@@ -1,5 +1,6 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { useForm } from '@tanstack/react-form-start'
+import { useState } from 'react'
 
 import type { UpdatePostBodyInput } from '#/schemas/posts.schema'
 import {
@@ -13,20 +14,11 @@ import { MarkdownEditor } from '#/components/markdown-editor'
 import { MarkdownRenderer } from '#/components/markdown-renderer'
 import { AspectRatio } from '#/components/ui/aspect-ratio'
 import { Button } from '#/components/ui/button'
-import { Field, FieldError, FieldGroup, FieldLabel } from '#/components/ui/field'
+import { Field, FieldError, FieldGroup } from '#/components/ui/field'
 import { Spinner } from '#/components/ui/spinner'
 import { TabsContent } from '#/components/ui/tabs'
 import { Textarea } from '#/components/ui/textarea'
-import { ToggleGroup, ToggleGroupItem } from '#/components/ui/toggle-group'
 import { getStorageUrl } from '#/utils/storage'
-
-const postStatusOptions = ['PUBLISHED', 'DRAFT', 'ARCHIVED'] as const
-
-type PostStatus = (typeof postStatusOptions)[number]
-
-const isPostStatus = (value: string): value is PostStatus => {
-  return postStatusOptions.some((status) => status === value)
-}
 
 export const Route = createFileRoute('/_post-form/$username/$postSlug/edit')({
   loader: async ({ context: { queryClient }, params }) => {
@@ -34,17 +26,58 @@ export const Route = createFileRoute('/_post-form/$username/$postSlug/edit')({
       editablePostDetailQueryOptions(params.username, params.postSlug)
     )
   },
+  head: () => {
+    const title = `Edit Post | ${import.meta.env.VITE_APP_NAME} — Write Anything That Matters`
+    const description = `Nothing’s final. Change anything.`
+    const appUrl = import.meta.env.VITE_APP_URL
+
+    return {
+      meta: [
+        { title: title },
+        { name: 'description', content: description },
+
+        // open graph
+        { property: 'og:title', content: title },
+        { property: 'og:description', content: description },
+        { property: 'og:type', content: 'website' },
+        { property: 'og:url', content: appUrl },
+        {
+          property: 'og:image',
+          content: `${appUrl}/api/og-static?type=post&title=${encodeURIComponent('Rewrite It')}&description=${encodeURIComponent(description)}&label=${encodeURIComponent('Edit Post')}`,
+        },
+        { property: 'og:site_name', content: import.meta.env.VITE_APP_NAME },
+
+        // twitter
+        { name: 'twitter:card', content: 'summary_large_image' },
+        { name: 'twitter:title', content: title },
+        { name: 'twitter:description', content: description },
+        { name: 'twitter:url', content: appUrl },
+        {
+          name: 'twitter:image',
+          content: `${appUrl}/api/og-static?type=post&title=${encodeURIComponent('Rewrite It')}&description=${encodeURIComponent(description)}&label=${encodeURIComponent('Edit Post')}`,
+        },
+      ],
+    }
+  },
   component: RouteComponent,
 })
+
+type FormMeta = {
+  submitAction: 'publish' | 'save' | 'unpublish'
+}
+
+const onSubmitMeta: FormMeta = {
+  submitAction: 'publish',
+}
 
 function RouteComponent() {
   const params = Route.useParams()
   const { queryClient, orpc } = Route.useRouteContext()
+  const [activeSubmitAction, setActiveSubmitAction] = useState<
+    FormMeta['submitAction'] | null
+  >(null)
 
-  const { data: post } = useEditablePostDetail(
-    params.username,
-    params.postSlug
-  )
+  const { data: post } = useEditablePostDetail(params.username, params.postSlug)
 
   const updatePostMutation = useUpdatePost({
     queryClient,
@@ -65,13 +98,47 @@ function RouteComponent() {
       onChange: updatePostBodySchema,
       onSubmit: updatePostBodySchema,
     },
-    onSubmit: async ({ value }) => {
-      await updatePostMutation.mutateAsync({
-        id: post.id,
-        ...value,
-      })
+    onSubmitMeta,
+    onSubmit: async ({ value, meta }) => {
+      if (meta.submitAction === 'publish') {
+        await updatePostMutation.mutateAsync({
+          id: post.id,
+          ...value,
+          status: 'PUBLISHED',
+        })
+      } else if (meta.submitAction === 'save') {
+        await updatePostMutation.mutateAsync({
+          id: post.id,
+          ...value,
+          status: 'DRAFT',
+        })
+      } else {
+        await updatePostMutation.mutateAsync({
+          id: post.id,
+          ...value,
+          status: 'ARCHIVED',
+        })
+      }
     },
   })
+
+  const handleSubmitAction = async (submitAction: FormMeta['submitAction']) => {
+    setActiveSubmitAction(submitAction)
+
+    try {
+      await form.handleSubmit({ submitAction })
+    } finally {
+      setActiveSubmitAction(null)
+    }
+  }
+
+  const handlePublish = () => {
+    void handleSubmitAction('publish')
+  }
+
+  const handleSave = () => {
+    void handleSubmitAction('save')
+  }
 
   return (
     <>
@@ -83,7 +150,6 @@ function RouteComponent() {
             onSubmit={(e) => {
               e.preventDefault()
               e.stopPropagation()
-              void form.handleSubmit()
             }}
           >
             <FieldGroup>
@@ -213,39 +279,31 @@ function RouteComponent() {
 
       <footer className="fixed right-0 bottom-0 left-0 z-50 h-14">
         <div className="container mx-auto flex h-full w-full max-w-4xl items-center justify-start gap-3">
-          <form.Field
-            name="status"
-            children={(field) => {
-              const isInvalid =
-                field.state.meta.isTouched && !field.state.meta.isValid
+          <form.Subscribe
+            selector={(state) => [state.canSubmit, state.isSubmitting]}
+            children={([canSubmit, isSubmitting]) => {
+              const canSubmitNow = !!canSubmit
+              const formIsSubmitting = !!isSubmitting
+              const isPending = formIsSubmitting || updatePostMutation.isPending
+              const isPublishing = isPending && activeSubmitAction === 'publish'
 
               return (
-                <Field
-                  data-invalid={isInvalid}
-                  orientation="horizontal"
-                  className="w-auto items-center"
+                <Button
+                  form="update-post-form"
+                  type="submit"
+                  size="lg"
+                  onClick={handlePublish}
+                  disabled={!canSubmitNow || isPending}
                 >
-                  <FieldLabel>Status</FieldLabel>
-                  <ToggleGroup
-                    type="single"
-                    value={field.state.value}
-                    onValueChange={(value) => {
-                      if (isPostStatus(value)) {
-                        field.handleChange(value)
-                      }
-                    }}
-                    size="sm"
-                    variant="outline"
-                    aria-invalid={isInvalid}
-                  >
-                    {postStatusOptions.map((status) => (
-                      <ToggleGroupItem key={status} value={status}>
-                        {status}
-                      </ToggleGroupItem>
-                    ))}
-                  </ToggleGroup>
-                  {isInvalid && <FieldError errors={field.state.meta.errors} />}
-                </Field>
+                  {isPublishing ? (
+                    <>
+                      <Spinner />
+                      Updating...
+                    </>
+                  ) : (
+                    'Update post'
+                  )}
+                </Button>
               )
             }}
           />
@@ -253,24 +311,26 @@ function RouteComponent() {
           <form.Subscribe
             selector={(state) => [state.canSubmit, state.isSubmitting]}
             children={([canSubmit, isSubmitting]) => {
-              const canSubmitNow = canSubmit ?? false
-              const formIsSubmitting = isSubmitting ?? false
+              const canSubmitNow = !!canSubmit
+              const formIsSubmitting = !!isSubmitting
               const isPending = formIsSubmitting || updatePostMutation.isPending
+              const isSaving = isPending && activeSubmitAction === 'save'
 
               return (
                 <Button
                   form="update-post-form"
                   type="submit"
                   size="lg"
+                  onClick={handleSave}
                   disabled={!canSubmitNow || isPending}
                 >
-                  {isPending ? (
+                  {isSaving ? (
                     <>
                       <Spinner />
-                      Updating...
+                      Saving...
                     </>
                   ) : (
-                    'Update post'
+                    'Save draft'
                   )}
                 </Button>
               )

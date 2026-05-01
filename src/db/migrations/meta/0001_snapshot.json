@@ -1,6 +1,6 @@
 {
-  "id": "0957115e-1cc5-46f7-85e6-cfa1859fd093",
-  "prevId": "63dd8fcd-9be4-49ef-b445-9fe435d96daa",
+  "id": "0052a1f3-2882-4957-afca-e81d567dc092",
+  "prevId": "9b5c26ba-1967-422e-b525-a02682a75401",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -111,12 +111,8 @@
           "name": "account_user_id_user_id_fk",
           "tableFrom": "account",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -210,12 +206,8 @@
           "name": "session_user_id_user_id_fk",
           "tableFrom": "session",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -225,9 +217,7 @@
         "session_token_unique": {
           "name": "session_token_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "token"
-          ]
+          "columns": ["token"]
         }
       },
       "policies": {},
@@ -372,16 +362,12 @@
         "user_email_unique": {
           "name": "user_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         },
         "user_username_unique": {
           "name": "user_username_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "username"
-          ]
+          "columns": ["username"]
         }
       },
       "policies": {},
@@ -526,6 +512,12 @@
           "notNull": true,
           "default": 0
         },
+        "published_at": {
+          "name": "published_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
@@ -586,6 +578,33 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
+        },
+        "posts_feed_idx": {
+          "name": "posts_feed_idx",
+          "columns": [
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "published_at",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            },
+            {
+              "expression": "id",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -593,12 +612,8 @@
           "name": "posts_author_id_user_id_fk",
           "tableFrom": "posts",
           "tableTo": "user",
-          "columnsFrom": [
-            "author_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["author_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -618,6 +633,10 @@
         "posts_comments_count_non_negative": {
           "name": "posts_comments_count_non_negative",
           "value": "\"posts\".\"comments_count\" >= 0"
+        },
+        "posts_published_at_matches_status": {
+          "name": "posts_published_at_matches_status",
+          "value": "(\"posts\".\"status\" = 'PUBLISHED' AND \"posts\".\"published_at\" IS NOT NULL) OR (\"posts\".\"status\" <> 'PUBLISHED' AND \"posts\".\"published_at\" IS NULL)"
         }
       },
       "isRLSEnabled": false
@@ -627,11 +646,7 @@
     "public.post_status": {
       "name": "post_status",
       "schema": "public",
-      "values": [
-        "ARCHIVED",
-        "DRAFT",
-        "PUBLISHED"
-      ]
+      "values": ["ARCHIVED", "DRAFT", "PUBLISHED"]
     }
   },
   "schemas": {},

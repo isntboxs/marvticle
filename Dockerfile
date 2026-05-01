@@ -22,8 +22,10 @@ COPY . .
 
 # Public build-time variables from Dokploy Build Arguments.
 # Runtime-only secrets should stay in Dokploy Environment Variables.
+ARG VITE_APP_NAME
 ARG VITE_APP_URL
 ARG VITE_BUCKET_PUBLIC_URL
+ENV VITE_APP_NAME=${VITE_APP_NAME}
 ENV VITE_APP_URL=${VITE_APP_URL}
 ENV VITE_BUCKET_PUBLIC_URL=${VITE_BUCKET_PUBLIC_URL}
 

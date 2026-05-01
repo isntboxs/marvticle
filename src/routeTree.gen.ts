@@ -13,6 +13,8 @@ import { Route as PostFormRouteImport } from './routes/_post-form'
 import { Route as AuthRouteImport } from './routes/_auth'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
+import { Route as ApiOgStaticRouteImport } from './routes/api/og-static'
+import { Route as ApiOgRouteImport } from './routes/api/og'
 import { Route as PostFormNewRouteImport } from './routes/_post-form/new'
 import { Route as AuthSignUpRouteImport } from './routes/_auth/sign-up'
 import { Route as AuthSignInRouteImport } from './routes/_auth/sign-in'
@@ -38,6 +40,16 @@ const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AppRoute,
+} as any)
+const ApiOgStaticRoute = ApiOgStaticRouteImport.update({
+  id: '/api/og-static',
+  path: '/api/og-static',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiOgRoute = ApiOgRouteImport.update({
+  id: '/api/og',
+  path: '/api/og',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const PostFormNewRoute = PostFormNewRouteImport.update({
   id: '/new',
@@ -86,6 +98,8 @@ export interface FileRoutesByFullPath {
   '/sign-in': typeof AuthSignInRoute
   '/sign-up': typeof AuthSignUpRoute
   '/new': typeof PostFormNewRoute
+  '/api/og': typeof ApiOgRoute
+  '/api/og-static': typeof ApiOgStaticRoute
   '/$username/$postSlug': typeof AppUsernamePostSlugRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/orpc/$': typeof ApiOrpcSplatRoute
@@ -97,6 +111,8 @@ export interface FileRoutesByTo {
   '/sign-in': typeof AuthSignInRoute
   '/sign-up': typeof AuthSignUpRoute
   '/new': typeof PostFormNewRoute
+  '/api/og': typeof ApiOgRoute
+  '/api/og-static': typeof ApiOgStaticRoute
   '/$username/$postSlug': typeof AppUsernamePostSlugRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/orpc/$': typeof ApiOrpcSplatRoute
@@ -111,6 +127,8 @@ export interface FileRoutesById {
   '/_auth/sign-in': typeof AuthSignInRoute
   '/_auth/sign-up': typeof AuthSignUpRoute
   '/_post-form/new': typeof PostFormNewRoute
+  '/api/og': typeof ApiOgRoute
+  '/api/og-static': typeof ApiOgStaticRoute
   '/_app/': typeof AppIndexRoute
   '/_app/$username/$postSlug': typeof AppUsernamePostSlugRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -125,6 +143,8 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/sign-up'
     | '/new'
+    | '/api/og'
+    | '/api/og-static'
     | '/$username/$postSlug'
     | '/api/auth/$'
     | '/api/orpc/$'
@@ -136,6 +156,8 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/sign-up'
     | '/new'
+    | '/api/og'
+    | '/api/og-static'
     | '/$username/$postSlug'
     | '/api/auth/$'
     | '/api/orpc/$'
@@ -149,6 +171,8 @@ export interface FileRouteTypes {
     | '/_auth/sign-in'
     | '/_auth/sign-up'
     | '/_post-form/new'
+    | '/api/og'
+    | '/api/og-static'
     | '/_app/'
     | '/_app/$username/$postSlug'
     | '/api/auth/$'
@@ -161,6 +185,8 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   AuthRoute: typeof AuthRouteWithChildren
   PostFormRoute: typeof PostFormRouteWithChildren
+  ApiOgRoute: typeof ApiOgRoute
+  ApiOgStaticRoute: typeof ApiOgStaticRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiOrpcSplatRoute: typeof ApiOrpcSplatRoute
   ApiS3CoverImageRoute: typeof ApiS3CoverImageRoute
@@ -195,6 +221,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/api/og-static': {
+      id: '/api/og-static'
+      path: '/api/og-static'
+      fullPath: '/api/og-static'
+      preLoaderRoute: typeof ApiOgStaticRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/og': {
+      id: '/api/og'
+      path: '/api/og'
+      fullPath: '/api/og'
+      preLoaderRoute: typeof ApiOgRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_post-form/new': {
       id: '/_post-form/new'
@@ -297,6 +337,8 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   AuthRoute: AuthRouteWithChildren,
   PostFormRoute: PostFormRouteWithChildren,
+  ApiOgRoute: ApiOgRoute,
+  ApiOgStaticRoute: ApiOgStaticRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiOrpcSplatRoute: ApiOrpcSplatRoute,
   ApiS3CoverImageRoute: ApiS3CoverImageRoute,

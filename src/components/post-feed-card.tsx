@@ -25,6 +25,10 @@ export const PostFeedCard = (post: Props) => {
     username: post.author.username,
     postSlug: post.slug,
   }
+  const publishedAt = post.publishedAt ? new Date(post.publishedAt) : null
+  const updatedAt = new Date(post.updatedAt)
+  const showUpdatedAt =
+    publishedAt !== null && updatedAt.getTime() > publishedAt.getTime()
 
   return (
     <Card className={cn('gap-4 py-0', !post.coverImage && 'pt-4')}>
@@ -49,22 +53,29 @@ export const PostFeedCard = (post: Props) => {
           <div className="flex h-full flex-1 flex-col justify-between">
             <p className="text-sm font-medium">@{authorUsername}</p>
 
-            <div className="flex items-center gap-2">
-              <p className="text-xs text-muted-foreground">
-                {formatDate(new Date(post.createdAt), 'MMM d, yyyy')}
-              </p>
+            {publishedAt && (
+              <div className="flex items-center gap-2">
+                <p className="text-xs text-muted-foreground">
+                  {formatDate(publishedAt, 'MMM d, yyyy')}
+                </p>
 
-              <Separator
-                orientation="vertical"
-                className="rounded-full data-vertical:h-1 data-vertical:w-1 data-vertical:self-center"
-              />
+                {showUpdatedAt && (
+                  <>
+                    <Separator
+                      orientation="vertical"
+                      className="rounded-full data-vertical:h-1 data-vertical:w-1 data-vertical:self-center"
+                    />
 
-              <p className="text-xs text-muted-foreground">
-                {formatDistanceToNowStrict(new Date(post.updatedAt), {
-                  addSuffix: true,
-                })}
-              </p>
-            </div>
+                    <p className="text-xs text-muted-foreground">
+                      Updated{' '}
+                      {formatDistanceToNowStrict(updatedAt, {
+                        addSuffix: true,
+                      })}
+                    </p>
+                  </>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </CardHeader>
