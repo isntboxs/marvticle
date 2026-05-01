@@ -117,6 +117,8 @@ const OGDomain = ({
   pathname?: string
   isDomain?: boolean
 }) => {
+  const normalizedPath = pathname?.replace(/^\/+/, '')
+
   if (!isDomain) {
     return (
       <div
@@ -126,14 +128,14 @@ const OGDomain = ({
           border: '1px solid rgba(255,255,255,0.12)',
         }}
       >
-        article.marvagency.net/{pathname}
+        article.marvagency.net{normalizedPath ? `/${normalizedPath}` : ''}
       </div>
     )
   }
 
   return (
     <span tw="text-sm text-neutral-50">
-      article.marvagency.net{pathname && `/${pathname}`}
+      article.marvagency.net{normalizedPath ? `/${normalizedPath}` : ''}
     </span>
   )
 }
