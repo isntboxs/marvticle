@@ -15,12 +15,20 @@ export type PostTimestampUpdateValues = {
   publishedAt?: Date | null
 }
 
+type ShouldShowPostUpdatedAtInput = {
+  publishedAt: Date | null
+  updatedAt: Date
+}
+
+const MIN_VISIBLE_UPDATE_DELAY_MS = 1_000
+
 export const getCreatePostTimestampValues = ({
   status,
   now = new Date(),
 }: CreatePostTimestampInput) => {
   return {
     publishedAt: status === 'PUBLISHED' ? now : null,
+    updatedAt: now,
   }
 }
 
@@ -44,4 +52,17 @@ export const getUpdatePostTimestampValues = ({
   return {
     publishedAt: now,
   }
+}
+
+export const shouldShowPostUpdatedAt = ({
+  publishedAt,
+  updatedAt,
+}: ShouldShowPostUpdatedAtInput) => {
+  if (!publishedAt) {
+    return false
+  }
+
+  return (
+    updatedAt.getTime() - publishedAt.getTime() >= MIN_VISIBLE_UPDATE_DELAY_MS
+  )
 }

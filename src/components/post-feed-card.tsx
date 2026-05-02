@@ -13,6 +13,7 @@ import { AspectRatio } from '#/components/ui/aspect-ratio'
 import { Card, CardContent, CardFooter, CardHeader } from '#/components/ui/card'
 import { Separator } from '#/components/ui/separator'
 import { UserAvatar } from '#/components/user-avatar'
+import { shouldShowPostUpdatedAt } from '#/lib/post-timestamps'
 import { getPostReadTime } from '#/lib/posts'
 import { cn } from '#/lib/utils'
 import { getStorageUrl } from '#/utils/storage'
@@ -27,8 +28,7 @@ export const PostFeedCard = (post: Props) => {
   }
   const publishedAt = post.publishedAt ? new Date(post.publishedAt) : null
   const updatedAt = new Date(post.updatedAt)
-  const showUpdatedAt =
-    publishedAt !== null && updatedAt.getTime() > publishedAt.getTime()
+  const showUpdatedAt = shouldShowPostUpdatedAt({ publishedAt, updatedAt })
 
   return (
     <Card className={cn('gap-4 py-0', !post.coverImage && 'pt-4')}>
