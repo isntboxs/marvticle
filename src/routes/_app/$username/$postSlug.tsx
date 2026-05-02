@@ -23,6 +23,7 @@ import { Skeleton } from '#/components/ui/skeleton'
 import { UserAvatar } from '#/components/user-avatar'
 import { authorProfileQueryOptions } from '#/hooks/use-author-profile'
 import { postDetailQueryOptions } from '#/hooks/use-post-detail'
+import { shouldShowPostUpdatedAt } from '#/lib/post-timestamps'
 import { cn } from '#/lib/utils'
 import { getStorageUrl } from '#/utils/storage'
 import { parseMarkdownToWords } from '#/utils/parse-markdown.ts'
@@ -93,8 +94,7 @@ function RouteComponent() {
   const authorUsername = post.author.username
   const publishedAt = post.publishedAt ? new Date(post.publishedAt) : null
   const updatedAt = new Date(post.updatedAt)
-  const showUpdatedAt =
-    publishedAt !== null && updatedAt.getTime() > publishedAt.getTime()
+  const showUpdatedAt = shouldShowPostUpdatedAt({ publishedAt, updatedAt })
   const unpublishedStatusLabel =
     post.status === 'DRAFT'
       ? 'Draft'

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   getCreatePostTimestampValues,
   getUpdatePostTimestampValues,
+  shouldShowPostUpdatedAt,
 } from '#/lib/post-timestamps'
 
 describe('post timestamp helpers', () => {
@@ -11,6 +12,7 @@ describe('post timestamp helpers', () => {
 
     expect(getCreatePostTimestampValues({ status: 'DRAFT', now })).toEqual({
       publishedAt: null,
+      updatedAt: now,
     })
   })
 
@@ -19,6 +21,7 @@ describe('post timestamp helpers', () => {
 
     expect(getCreatePostTimestampValues({ status: 'PUBLISHED', now })).toEqual({
       publishedAt: now,
+      updatedAt: now,
     })
   })
 
@@ -79,5 +82,12 @@ describe('post timestamp helpers', () => {
         nextStatus: 'PUBLISHED',
       })
     ).toEqual({})
+  })
+
+  it('does not treat direct publish insert timestamp drift as an update', () => {
+    const publishedAt = new Date('2026-04-30T10:00:00.000Z')
+    const updatedAt = new Date('2026-04-30T10:00:00.004Z')
+
+    expect(shouldShowPostUpdatedAt({ publishedAt, updatedAt })).toBe(false)
   })
 })
