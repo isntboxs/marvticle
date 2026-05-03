@@ -7,6 +7,7 @@ import {
   openAPI as openAPIPlugin,
   username as usernamePlugin,
 } from 'better-auth/plugins'
+import { dash as dashPlugin } from '@better-auth/infra'
 
 import * as schema from '#/db/schemas'
 import { db } from '#/db'
@@ -42,6 +43,9 @@ export const auth = betterAuth({
     maxPasswordLength: 128,
   },
   plugins: [
+    dashPlugin({
+      apiKey: env.BETTER_AUTH_API_KEY,
+    }),
     adminPlugin(),
     bearerPlugin(),
     multiSessionPlugin(),
