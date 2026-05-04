@@ -18,6 +18,7 @@ import { Route as ApiOgRouteImport } from './routes/api/og'
 import { Route as PostFormNewRouteImport } from './routes/_post-form/new'
 import { Route as AuthSignUpRouteImport } from './routes/_auth/sign-up'
 import { Route as AuthSignInRouteImport } from './routes/_auth/sign-in'
+import { Route as AppUsernameIndexRouteImport } from './routes/_app/$username/index'
 import { Route as ApiS3CoverImageRouteImport } from './routes/api/s3.cover-image'
 import { Route as ApiOrpcSplatRouteImport } from './routes/api/orpc.$'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth.$'
@@ -66,6 +67,11 @@ const AuthSignInRoute = AuthSignInRouteImport.update({
   path: '/sign-in',
   getParentRoute: () => AuthRoute,
 } as any)
+const AppUsernameIndexRoute = AppUsernameIndexRouteImport.update({
+  id: '/$username/',
+  path: '/$username/',
+  getParentRoute: () => AppRoute,
+} as any)
 const ApiS3CoverImageRoute = ApiS3CoverImageRouteImport.update({
   id: '/api/s3/cover-image',
   path: '/api/s3/cover-image',
@@ -104,6 +110,7 @@ export interface FileRoutesByFullPath {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/orpc/$': typeof ApiOrpcSplatRoute
   '/api/s3/cover-image': typeof ApiS3CoverImageRoute
+  '/$username/': typeof AppUsernameIndexRoute
   '/$username/$postSlug/edit': typeof PostFormUsernamePostSlugEditRoute
 }
 export interface FileRoutesByTo {
@@ -117,6 +124,7 @@ export interface FileRoutesByTo {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/orpc/$': typeof ApiOrpcSplatRoute
   '/api/s3/cover-image': typeof ApiS3CoverImageRoute
+  '/$username': typeof AppUsernameIndexRoute
   '/$username/$postSlug/edit': typeof PostFormUsernamePostSlugEditRoute
 }
 export interface FileRoutesById {
@@ -134,6 +142,7 @@ export interface FileRoutesById {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/orpc/$': typeof ApiOrpcSplatRoute
   '/api/s3/cover-image': typeof ApiS3CoverImageRoute
+  '/_app/$username/': typeof AppUsernameIndexRoute
   '/_post-form/$username/$postSlug/edit': typeof PostFormUsernamePostSlugEditRoute
 }
 export interface FileRouteTypes {
@@ -149,6 +158,7 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/api/orpc/$'
     | '/api/s3/cover-image'
+    | '/$username/'
     | '/$username/$postSlug/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -162,6 +172,7 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/api/orpc/$'
     | '/api/s3/cover-image'
+    | '/$username'
     | '/$username/$postSlug/edit'
   id:
     | '__root__'
@@ -178,6 +189,7 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/api/orpc/$'
     | '/api/s3/cover-image'
+    | '/_app/$username/'
     | '/_post-form/$username/$postSlug/edit'
   fileRoutesById: FileRoutesById
 }
@@ -257,6 +269,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthSignInRouteImport
       parentRoute: typeof AuthRoute
     }
+    '/_app/$username/': {
+      id: '/_app/$username/'
+      path: '/$username'
+      fullPath: '/$username/'
+      preLoaderRoute: typeof AppUsernameIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/api/s3/cover-image': {
       id: '/api/s3/cover-image'
       path: '/api/s3/cover-image'
@@ -298,11 +317,13 @@ declare module '@tanstack/react-router' {
 interface AppRouteChildren {
   AppIndexRoute: typeof AppIndexRoute
   AppUsernamePostSlugRoute: typeof AppUsernamePostSlugRoute
+  AppUsernameIndexRoute: typeof AppUsernameIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppIndexRoute: AppIndexRoute,
   AppUsernamePostSlugRoute: AppUsernamePostSlugRoute,
+  AppUsernameIndexRoute: AppUsernameIndexRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)

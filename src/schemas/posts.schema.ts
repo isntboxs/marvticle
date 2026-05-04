@@ -111,6 +111,7 @@ export type UpdatePostInput = z.infer<typeof updatePostInputSchema>
 export const getManyPostsParamsSchema = z.object({
   cursor: z.string().min(1).optional(),
   limit: z.coerce.number().int().min(1).max(50).default(10),
+  authorUsername: z.string().min(1).optional(),
 })
 
 export const postPaginationCursorSchema = z.object({

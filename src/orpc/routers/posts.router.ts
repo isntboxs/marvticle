@@ -104,22 +104,22 @@ const getManyPostsHandler = orpcBase.posts.getMany.handler(
         )
       : undefined
 
+    const authorFilter = input.authorUsername
+      ? eq(userTable.username, input.authorUsername)
+      : undefined
+
+    const baseFilters = [
+      eq(postsTable.status, 'PUBLISHED'),
+      isNotNull(postsTable.publishedAt),
+      paginationFilter,
+      authorFilter,
+    ].filter(Boolean)
+
     const rows = await context.db
       .select(publishedPostSelect)
       .from(postsTable)
       .innerJoin(userTable, eq(postsTable.authorId, userTable.id))
-      .where(
-        paginationFilter
-          ? and(
-              eq(postsTable.status, 'PUBLISHED'),
-              isNotNull(postsTable.publishedAt),
-              paginationFilter
-            )
-          : and(
-              eq(postsTable.status, 'PUBLISHED'),
-              isNotNull(postsTable.publishedAt)
-            )
-      )
+      .where(and(...baseFilters))
       .orderBy(desc(postsTable.publishedAt), desc(postsTable.id))
       .limit(input.limit + 1)
 
