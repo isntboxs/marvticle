@@ -65,12 +65,15 @@ export const getManagedFileKey = (value: string): string | null => {
   return getFileKeyFromPublicUrl(value)
 }
 
-export const getStorageUrl = (value: string): string => {
+export const getPublicOrExternalUrl = (value: string): string => {
   if (/^https?:\/\//.test(value)) {
     return value
   }
-
   return getPublicUrl(value)
+}
+
+export const getStorageUrl = (value: string): string => {
+  return getPublicOrExternalUrl(value)
 }
 
 export const getFileKeyFromPublicUrl = (publicUrl: string): string | null => {
