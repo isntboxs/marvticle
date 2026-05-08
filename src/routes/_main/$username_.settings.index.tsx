@@ -29,7 +29,7 @@ import {
 } from '#/components/ui/input-group'
 import { Textarea } from '#/components/ui/textarea'
 
-export const Route = createFileRoute('/_main/$username/settings/')({
+export const Route = createFileRoute('/_main/$username_/settings/')({
   loader: async ({ context, params }) => {
     const user = await context.queryClient.ensureQueryData(
       userProfileQueryOptions(params.username)

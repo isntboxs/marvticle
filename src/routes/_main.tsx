@@ -13,9 +13,11 @@ export const Route = createFileRoute('/_main')({
 })
 
 function RouteComponent() {
+  const { auth } = Route.useRouteContext()
+
   return (
     <SidebarProvider>
-      <MainSidebar variant="floating" />
+      <MainSidebar variant="floating" auth={auth} />
 
       <SidebarInset>
         <Wrapper>

@@ -1,18 +1,23 @@
 import type { ComponentProps } from 'react'
 
-import { Sidebar, SidebarContent, SidebarFooter } from '#/components/ui/sidebar'
+import type { auth } from '#/lib/auth/server'
+import { MainSidebarContent } from '#/components/main-sidebar-conntent'
+import { MainSidebarFooter } from '#/components/main-sidebar-footer'
 import { MainSidebarHeader } from '#/components/main-sidebar-header'
+import { Sidebar } from '#/components/ui/sidebar'
 
-type MainSidebarProps = ComponentProps<typeof Sidebar>
+type MainSidebarProps = ComponentProps<typeof Sidebar> & {
+  auth: typeof auth.$Infer.Session | null
+}
 
-export const MainSidebar = ({ ...props }: MainSidebarProps) => {
+export const MainSidebar = ({ auth, ...props }: MainSidebarProps) => {
   return (
     <Sidebar {...props}>
       <MainSidebarHeader />
 
-      <SidebarContent></SidebarContent>
+      <MainSidebarContent />
 
-      <SidebarFooter></SidebarFooter>
+      <MainSidebarFooter auth={auth} />
     </Sidebar>
   )
 }

@@ -18,7 +18,7 @@ import {
 } from '#/components/ui/button-group.tsx'
 import { userProfileQueryOptions } from '#/hooks/use-user-profile'
 
-export const Route = createFileRoute('/_main/$username/settings')({
+export const Route = createFileRoute('/_main/$username_/settings')({
   staticData: { breadcrumb: 'Settings' },
   beforeLoad: ({ context, location }) => {
     const { auth } = context
