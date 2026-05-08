@@ -14,15 +14,10 @@ export const MainBreadcrumb = () => {
   const matches = useMatches()
 
   const crumbs = matches
-    .filter(
-      (m) => (m.staticData as { breadcrumb?: string }).breadcrumb !== undefined
-    )
+    .filter((m) => m.context.breadcrumb)
     .map((m) => ({
-      label:
-        (m.staticData as { breadcrumb?: string }).breadcrumb ??
-        (m.params as { username?: string }).username ??
-        '',
       to: m.pathname,
+      label: m.context.breadcrumb!,
     }))
 
   return (

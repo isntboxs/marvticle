@@ -9,7 +9,6 @@ import {
 
 import { BuildingIcon, UserIcon } from 'lucide-react'
 import { Fragment } from 'react'
-import { MainBreadcrumb } from '#/components/main-breadcrumb.tsx'
 import { Button } from '#/components/ui/button.tsx'
 import { cn } from '#/lib/utils.ts'
 import {
@@ -79,12 +78,6 @@ function RouteComponent() {
 
   return (
     <>
-      <div className="sticky top-0 z-50 h-12 w-full bg-sidebar/90 backdrop-blur supports-backdrop-filter:bg-sidebar/60">
-        <div className="flex h-full items-center justify-between px-4 py-2">
-          <MainBreadcrumb />
-        </div>
-      </div>
-
       <div className="w-full space-y-8 px-4 pt-4 pb-8">
         <div className="flex flex-col">
           <h1 className="font-heading text-2xl font-bold">Settings</h1>

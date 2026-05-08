@@ -30,6 +30,9 @@ import {
 import { Textarea } from '#/components/ui/textarea'
 
 export const Route = createFileRoute('/_main/$username_/settings/')({
+  beforeLoad: () => ({
+    breadcrumb: 'Settings',
+  }),
   loader: async ({ context, params }) => {
     const user = await context.queryClient.ensureQueryData(
       userProfileQueryOptions(params.username)

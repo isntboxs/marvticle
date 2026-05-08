@@ -7,6 +7,7 @@ import {
 } from '#/components/ui/sidebar'
 import { MainSidebar } from '#/components/main-sidebar'
 import { cn } from '#/lib/utils'
+import { MainBreadcrumb } from '#/components/main-breadcrumb'
 
 export const Route = createFileRoute('/_main')({
   component: RouteComponent,
@@ -41,6 +42,12 @@ const Wrapper = ({ children }: { children: React.ReactNode }) => {
         isMobile && 'm-0'
       )}
     >
+      <div className="sticky top-0 z-50 h-12 w-full bg-sidebar/90 backdrop-blur supports-backdrop-filter:bg-sidebar/60">
+        <div className="flex h-full items-center justify-between px-4 py-2">
+          <MainBreadcrumb />
+        </div>
+      </div>
+
       {children}
     </div>
   )

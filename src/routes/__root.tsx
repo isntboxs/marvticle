@@ -21,6 +21,7 @@ import { getAuthFn } from '#/functions/get-auth-fn'
 interface MyRouterContext {
   orpc: typeof orpc
   queryClient: QueryClient
+  breadcrumb: string | undefined
 }
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
