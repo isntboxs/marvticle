@@ -40,7 +40,7 @@ export const SocialSignInButtons = () => {
     startTransitionGoogle(async () => {
       await authClient.signIn.social({
         provider: 'google',
-        callbackURL: redirect_to,
+        callbackURL: redirect_to ?? '/',
         fetchOptions: {
           onSuccess: () => {
             void router.invalidate()

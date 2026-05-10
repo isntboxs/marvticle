@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
-import { useForm } from '@tanstack/react-form'
+import { useForm } from '@tanstack/react-form-start'
 import { LockIcon, MailboxIcon, UserIcon } from '@phosphor-icons/react'
 import { AtSignIcon, EyeIcon, EyeOffIcon } from 'lucide-react'
 import { toast } from 'sonner'

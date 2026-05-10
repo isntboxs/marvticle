@@ -60,7 +60,7 @@ export const PasswordResetEmail = (props: PasswordResetEmailProps) => {
 
               <Text className="m-0 mb-[36px] text-[16px] leading-[26px] text-[#020304]">
                 Click the button below to create a new password. This link will
-                expire in 1 hours for security reasons.
+                expire in 1 hour for security reasons.
               </Text>
 
               {/* Reset Button */}

@@ -1,5 +1,5 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
-import { useForm } from '@tanstack/react-form'
+import { useForm } from '@tanstack/react-form-start'
 import { ArrowLeftIcon, CheckCircle, MailIcon } from 'lucide-react'
 import { toast } from 'sonner'
 

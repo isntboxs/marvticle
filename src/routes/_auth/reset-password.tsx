@@ -19,7 +19,7 @@ import { Spinner } from '#/components/ui/spinner'
 import { authClient } from '#/lib/auth/client'
 
 const resetPasswordSearchSchema = z.object({
-  token: z.string(),
+  token: z.string().optional(),
 })
 
 export const Route = createFileRoute('/_auth/reset-password')({

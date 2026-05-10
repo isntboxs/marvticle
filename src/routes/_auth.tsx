@@ -27,8 +27,14 @@ const authSearchSchema = z.object({
 export const Route = createFileRoute('/_auth')({
   validateSearch: authSearchSchema,
   beforeLoad: ({ context, search }) => {
+    const redirectTo =
+      search.redirect_to?.startsWith('/') &&
+      !search.redirect_to.startsWith('//')
+        ? search.redirect_to
+        : '/'
+
     if (context.auth) {
-      throw redirect({ to: search.redirect_to ?? '/', viewTransition: true })
+      throw redirect({ to: redirectTo, viewTransition: true })
     }
   },
   component: RouteComponent,
