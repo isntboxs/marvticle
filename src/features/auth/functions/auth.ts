@@ -2,7 +2,9 @@
 import { createServerFn } from '@tanstack/react-start'
 import { getRequestHeaders } from '@tanstack/react-start/server'
 
+import { changePasswordSchema } from '#/features/auth/schemas/auth.schema'
 import { authClient } from '#/lib/auth/client'
+import { auth } from '#/lib/auth/server'
 import { authMiddleware } from '#/middlewares/auth'
 
 export const listUserAccountsFn = createServerFn({ method: 'GET' })
@@ -41,4 +43,27 @@ export const listSessionsFn = createServerFn({ method: 'GET' })
     })
 
     return listSessions
+  })
+
+export const changePasswordFn = createServerFn({ method: 'POST' })
+  .middleware([authMiddleware])
+  .inputValidator(changePasswordSchema)
+  .handler(async ({ context, data }) => {
+    if (!context.auth) {
+      throw new Error('Not authenticated')
+    }
+
+    const headers = getRequestHeaders()
+
+    const changePassword = await auth.api.changePassword({
+      body: {
+        currentPassword: data.currentPassword,
+        newPassword: data.newPassword,
+        revokeOtherSessions: true,
+      },
+
+      headers,
+    })
+
+    return changePassword
   })

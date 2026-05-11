@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 
 import { ActiveSessionsCard } from '#/features/auth/components/active-sessions-card'
+import { ChangePasswordCard } from '#/features/auth/components/change-password-card'
 import { LinkedAccountsCard } from '#/features/auth/components/linked-accounts-card'
 import {
   listSessionsFn,
@@ -28,6 +29,7 @@ function RouteComponent() {
             Manage your email, password, connected accounts and more.
           </p>
         </div>
+        <ChangePasswordCard />
         <LinkedAccountsCard />
         <ActiveSessionsCard />
       </div>
