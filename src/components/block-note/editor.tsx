@@ -4,6 +4,11 @@ import { useCreateBlockNote } from '@blocknote/react'
 import '@blocknote/shadcn/style.css'
 import { BlockNoteView } from '@blocknote/shadcn'
 
+import {
+  BNCustomCodeBlock,
+  DEFAULT_CODE_BLOCK_LANGUAGE,
+  SUPPORTED_CODE_BLOCK_LANGUAGES,
+} from '#/components/block-note/bn-custom-code-block'
 import { Avatar, AvatarFallback, AvatarImage } from '#/components/ui/avatar'
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
@@ -43,11 +48,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '#/components/ui/tooltip'
-import {
-  BNCustomCodeBlock,
-  DEFAULT_CODE_BLOCK_LANGUAGE,
-  SUPPORTED_CODE_BLOCK_LANGUAGES,
-} from '#/components/block-note/bn-custom-code-block'
 import { createHighlighter } from '#/lib/shiki.bundle'
 
 const schema = BlockNoteSchema.create().extend({
@@ -58,7 +58,7 @@ const schema = BlockNoteSchema.create().extend({
       supportedLanguages: SUPPORTED_CODE_BLOCK_LANGUAGES,
       createHighlighter: () =>
         createHighlighter({
-          themes: ['one-light', 'one-dark-pro'],
+          themes: ['one-dark-pro'],
           langs: [],
         }),
     }),
@@ -89,7 +89,7 @@ export default function BlockNoteEditor() {
   // Renders the editor instance using a React component.
   return (
     <BlockNoteView
-      className="[&_.bn-editor]:bg-background!"
+      className="[&_.bn-editor]:rounded-none! [&_.bn-editor]:bg-transparent!"
       editor={editor}
       shadCNComponents={{
         Avatar: {

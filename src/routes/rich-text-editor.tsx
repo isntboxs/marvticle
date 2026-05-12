@@ -8,7 +8,7 @@ export const Route = createFileRoute('/rich-text-editor')({
 
 function RouteComponent() {
   return (
-    <div className="container mx-auto h-svh w-full max-w-7xl border border-white p-4">
+    <div className="container mx-auto h-svh w-full max-w-7xl p-4">
       <ClientOnly fallback={<div>Loading...</div>}>
         <BlockNoteEditor />
       </ClientOnly>

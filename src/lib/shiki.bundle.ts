@@ -175,6 +175,8 @@ const bundledLanguages = {
 const bundledThemes = {
   'one-dark-pro': () => import('@shikijs/themes/one-dark-pro'),
   'one-light': () => import('@shikijs/themes/one-light'),
+  'github-light': () => import('@shikijs/themes/github-light-default'),
+  'github-dark': () => import('@shikijs/themes/github-dark-default'),
 } as Record<BundledTheme, DynamicImportThemeRegistration>
 
 const createHighlighter = /* @__PURE__ */ createBundledHighlighter<

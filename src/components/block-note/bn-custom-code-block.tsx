@@ -168,7 +168,7 @@ function CustomCodeBlock({ block, editor, contentRef }: CodeBlockRenderProps) {
   }, [])
 
   return (
-    <div className="w-full overflow-hidden rounded-md border bg-background">
+    <div className="w-full overflow-hidden rounded-none border bg-none">
       <div
         className="flex h-10 items-center justify-between gap-3 border-b px-2"
         contentEditable={false}
@@ -181,11 +181,15 @@ function CustomCodeBlock({ block, editor, contentRef }: CodeBlockRenderProps) {
           <SelectTrigger
             aria-label="Code block language"
             size="sm"
-            className="h-7 w-32 rounded-md border-border bg-transparent px-2 text-xs"
+            className="h-7 w-32 rounded-none border-none! bg-transparent! px-2 text-xs"
           >
-            <SelectValue>{getLanguageName(language)}</SelectValue>
+            <SelectValue>
+              <span className="font-semibold text-muted-foreground capitalize">
+                {getLanguageName(language)}
+              </span>
+            </SelectValue>
           </SelectTrigger>
-          <SelectContent align="start" className="w-36 min-w-36">
+          <SelectContent align="start" className="h-64 w-36 min-w-36">
             {languageOptions.map((item) => (
               <SelectItem key={item.id} value={item.id}>
                 {item.name}
@@ -226,7 +230,7 @@ function CustomCodeBlock({ block, editor, contentRef }: CodeBlockRenderProps) {
         </div>
       </div>
 
-      <pre className="m-0 overflow-x-auto p-4 text-sm leading-6">
+      <pre className="m-0 overflow-x-auto p-3 text-sm leading-6">
         <code
           ref={contentRef}
           className="block min-w-full font-mono whitespace-pre outline-none"

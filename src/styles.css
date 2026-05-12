@@ -172,3 +172,7 @@
     cursor: pointer;
   }
 }
+
+.bn-block-content[data-content-type='codeBlock'] {
+  background: transparent !important;
+}
