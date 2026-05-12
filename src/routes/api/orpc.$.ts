@@ -1,13 +1,14 @@
 import { createFileRoute } from '@tanstack/react-router'
+
+import { SmartCoercionPlugin } from '@orpc/json-schema'
 import { OpenAPIHandler } from '@orpc/openapi/fetch'
 import { OpenAPIReferencePlugin } from '@orpc/openapi/plugins'
 import { onError } from '@orpc/server'
 import { RPCHandler } from '@orpc/server/fetch'
 import { ZodToJsonSchemaConverter } from '@orpc/zod/zod4'
-import { SmartCoercionPlugin } from '@orpc/json-schema'
-import { orpcRouters } from '#/orpc/routers'
-import { postSchema, postsPageSchema } from '#/schemas/posts.schema'
+
 import { CreateORPCContext } from '#/orpc'
+import { orpcRouters } from '#/orpc/routers'
 
 const rpcHandler = new RPCHandler(orpcRouters, {
   interceptors: [
@@ -37,8 +38,6 @@ const apiHandler = new OpenAPIHandler(orpcRouters, {
           description: 'API Reference for MARVTICLE',
         },
         commonSchemas: {
-          Post: { schema: postSchema },
-          PostsPage: { schema: postsPageSchema },
           UndefinedError: { error: 'UndefinedError' },
         },
         security: [{ apiKeyCookie: [] }],

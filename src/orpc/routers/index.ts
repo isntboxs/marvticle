@@ -5,11 +5,9 @@ import type {
 } from '@orpc/server'
 
 import { orpcBase } from '#/orpc'
-import { postsRouter } from '#/orpc/routers/posts.router'
 import { usersRouter } from '#/orpc/routers/users.router'
 
 export const orpcRouters = orpcBase.router({
-  posts: postsRouter,
   users: usersRouter,
 })
 
