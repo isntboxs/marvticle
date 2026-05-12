@@ -1,6 +1,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from '#/components/ui/avatar'
 import { GeneratedAvatar } from '#/components/generated-avatar'
 import { cn } from '#/lib/utils'
+import { getPublicOrExternalUrl } from '#/utils/storage'
 
 export const UserAvatar = ({
   image,
@@ -23,7 +24,11 @@ export const UserAvatar = ({
 
   return (
     <Avatar className={cn('size-8 rounded-none after:border-none', className)}>
-      <AvatarImage src={image} alt={name} className="rounded-none" />
+      <AvatarImage
+        src={getPublicOrExternalUrl(image)}
+        alt={name}
+        className="rounded-none"
+      />
       <AvatarFallback
         className={cn('size-8 rounded-none uppercase', className)}
       >

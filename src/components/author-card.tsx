@@ -20,6 +20,7 @@ import {
 import { Separator } from '#/components/ui/separator'
 import { Skeleton } from '#/components/ui/skeleton'
 import { UserAvatar } from '#/components/user-avatar'
+import { getPublicOrExternalUrl } from '#/utils/storage'
 
 interface AuthorCardProps {
   author: RouterOutputs['users']['getAuthorByUsername']
@@ -43,7 +44,7 @@ export function AuthorCard({
       <AspectRatio ratio={17 / 6}>
         {author.banner ? (
           <img
-            src={author.banner}
+            src={getPublicOrExternalUrl(author.banner)}
             alt={`${author.name}'s banner`}
             className="h-full w-full object-cover"
           />

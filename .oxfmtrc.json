@@ -1,0 +1,50 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "endOfLine": "lf",
+  "semi": false,
+  "singleQuote": true,
+  "tabWidth": 2,
+  "trailingComma": "es5",
+  "printWidth": 80,
+  "sortTailwindcss": {
+    "stylesheet": "src/styles.css",
+    "functions": ["clsx", "cn", "cva"],
+    "preserveWhitespace": true
+  },
+  "sortPackageJson": {
+    "sortScripts": true
+  },
+  "sortImports": {
+    "newlinesBetween": false,
+    "customGroups": [
+      {
+        "groupName": "react-libs",
+        "elementNamePattern": ["react"]
+      },
+      {
+        "groupName": "tanstack-libs",
+        "elementNamePattern": ["@tanstack", "@tanstack/**"]
+      },
+      {
+        "groupName": "local-libs",
+        "elementNamePattern": ["#/**", "@/**"]
+      }
+    ],
+    "groups": [
+      "tanstack-libs",
+      { "newlinesBetween": true },
+      "react-libs",
+      { "newlinesBetween": true },
+      "unknown",
+      { "newlinesBetween": true },
+      "local-libs"
+    ],
+    "internalPattern": ["#/", "@/"]
+  },
+  "ignorePatterns": [
+    "package-lock.json",
+    "pnpm-lock.yaml",
+    "yarn.lock",
+    "AGENTS.md"
+  ]
+}

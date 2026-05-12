@@ -18,6 +18,7 @@ import {
 } from '#/hooks/use-posts'
 
 export const Route = createFileRoute('/_app/')({
+  staticData: { breadcrumb: 'Home' },
   pendingComponent: PostsFeedPending,
   component: RouteComponent,
   loader: async ({ context: { queryClient } }) => {

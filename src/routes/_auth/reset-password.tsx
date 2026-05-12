@@ -1,11 +1,14 @@
-import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useState } from 'react'
 import { useForm } from '@tanstack/react-form-start'
-import { LockIcon } from '@phosphor-icons/react'
-import { AtSignIcon, EyeIcon, EyeOffIcon } from 'lucide-react'
-import { toast } from 'sonner'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 
-import { signInSchema } from '#/schemas/auth.schema'
+import { useState } from 'react'
+
+import { LockIcon } from '@phosphor-icons/react'
+import { EyeIcon, EyeOffIcon } from 'lucide-react'
+import { toast } from 'sonner'
+import { z } from 'zod'
+
+import { Button } from '#/components/ui/button'
 import { Field, FieldError, FieldGroup } from '#/components/ui/field'
 import {
   InputGroup,
@@ -13,88 +16,81 @@ import {
   InputGroupButton,
   InputGroupInput,
 } from '#/components/ui/input-group'
-import { Button } from '#/components/ui/button'
 import { Spinner } from '#/components/ui/spinner'
 import { authClient } from '#/lib/auth/client'
+import { resetPasswordSchema } from '#/schemas/auth.schema'
 
-export const Route = createFileRoute('/_auth/sign-in')({
+const resetPasswordSearchSchema = z.object({
+  token: z.string(),
+})
+
+export const Route = createFileRoute('/_auth/reset-password')({
+  validateSearch: resetPasswordSearchSchema,
+  beforeLoad: ({ search }) => {
+    if (!search.token) {
+      throw redirect({
+        to: '/sign-in',
+        replace: true,
+        viewTransition: true,
+      })
+    }
+  },
   component: RouteComponent,
 })
 
 function RouteComponent() {
   const [showPassword, setShowPassword] = useState<boolean>(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false)
 
-  const navigate = useNavigate()
   const search = Route.useSearch()
+  const navigate = Route.useNavigate()
 
   const form = useForm({
     defaultValues: {
-      username: '',
       password: '',
+      confirmPassword: '',
     },
+
     validators: {
-      onChange: signInSchema,
-      onSubmit: signInSchema,
+      onChange: resetPasswordSchema,
+      onSubmit: resetPasswordSchema,
     },
-    onSubmit: async ({ value, formApi }) => {
-      const result = await authClient.signIn.username({
-        username: value.username,
-        password: value.password,
+
+    onSubmit: async ({ value }) => {
+      await authClient.resetPassword({
+        newPassword: value.password,
+        token: search.token,
+        fetchOptions: {
+          onSuccess: () => {
+            void navigate({
+              to: '/sign-in',
+              replace: true,
+              viewTransition: true,
+            })
+
+            toast.success('Password reset successfully')
+          },
+          onError: (ctx) => {
+            toast.error('Failed to reset password', {
+              description: ctx.error.message,
+            })
+          },
+        },
       })
-
-      if (result.error) {
-        switch (result.error.code) {
-          case 'INVALID_USERNAME_OR_PASSWORD':
-            formApi.setFieldMeta('username', (meta) => ({
-              ...meta,
-              isTouched: true,
-              isValid: false,
-              errors: ['Invalid username or password.'],
-              errorMap: {
-                ...meta.errorMap,
-                onSubmit: 'Invalid username or password.',
-              },
-            }))
-
-            formApi.setFieldMeta('password', (meta) => ({
-              ...meta,
-              isTouched: true,
-              isValid: false,
-              errors: ['Invalid username or password.'],
-              errorMap: {
-                ...meta.errorMap,
-                onSubmit: 'Invalid username or password.',
-              },
-            }))
-
-            toast.error('Failed to sign in', {
-              description: result.error.message,
-            })
-            break
-          default:
-            toast.error('Failed to sign in', {
-              description: 'Something went wrong. Please try again.',
-            })
-            break
-        }
-      }
-
-      if (result.data) {
-        toast.success('Sign in successfully', {
-          description: 'Welcome back!',
-        })
-
-        void navigate({ to: search.redirect_to ?? '/', viewTransition: true })
-      }
     },
   })
 
-  const toggleShowPassword = () => {
+  const togglePasswordVisibility = () => {
     setShowPassword((prev) => !prev)
+  }
+
+  const toggleConfirmPasswordVisibility = () => {
+    setShowConfirmPassword((prev) => !prev)
   }
 
   return (
     <form
+      id="reset-password-form"
       onSubmit={(e) => {
         e.preventDefault()
         e.stopPropagation()
@@ -102,38 +98,6 @@ function RouteComponent() {
       }}
     >
       <FieldGroup>
-        <form.Field
-          name="username"
-          children={(field) => {
-            const isInvalid =
-              field.state.meta.isTouched && !field.state.meta.isValid
-            return (
-              <Field data-invalid={isInvalid}>
-                <InputGroup>
-                  <InputGroupAddon align="inline-start">
-                    <AtSignIcon className="text-muted-foreground" />
-                  </InputGroupAddon>
-
-                  <InputGroupInput
-                    id={field.name}
-                    name={field.name}
-                    value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    aria-invalid={isInvalid}
-                    aria-label="Username"
-                    placeholder="Username"
-                    autoComplete="username"
-                    type="text"
-                  />
-                </InputGroup>
-
-                {isInvalid && <FieldError errors={field.state.meta.errors} />}
-              </Field>
-            )
-          }}
-        />
-
         <form.Field
           name="password"
           children={(field) => {
@@ -155,7 +119,7 @@ function RouteComponent() {
                     aria-invalid={isInvalid}
                     aria-label="Password"
                     placeholder="Password"
-                    autoComplete="current-password"
+                    autoComplete="new-password"
                     type={showPassword ? 'text' : 'password'}
                   />
 
@@ -167,7 +131,7 @@ function RouteComponent() {
                       aria-pressed={showPassword}
                       type="button"
                       size="icon-xs"
-                      onClick={toggleShowPassword}
+                      onClick={togglePasswordVisibility}
                     >
                       {showPassword ? <EyeOffIcon /> : <EyeIcon />}
                     </InputGroupButton>
@@ -179,16 +143,53 @@ function RouteComponent() {
             )
           }}
         />
-      </FieldGroup>
 
-      <div className="mt-2 text-right">
-        <Link
-          to="/forgot-password"
-          className="text-xs text-primary hover:underline hover:underline-offset-4"
-        >
-          Forgot your password?
-        </Link>
-      </div>
+        <form.Field
+          name="confirmPassword"
+          children={(field) => {
+            const isInvalid =
+              field.state.meta.isTouched && !field.state.meta.isValid
+            return (
+              <Field data-invalid={isInvalid}>
+                <InputGroup>
+                  <InputGroupAddon align="inline-start">
+                    <LockIcon className="text-muted-foreground" />
+                  </InputGroupAddon>
+
+                  <InputGroupInput
+                    id={field.name}
+                    name={field.name}
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    aria-invalid={isInvalid}
+                    aria-label="Confirm Password"
+                    placeholder="Confirm Password"
+                    autoComplete="new-password"
+                    type={showConfirmPassword ? 'text' : 'password'}
+                  />
+
+                  <InputGroupAddon align="inline-end">
+                    <InputGroupButton
+                      aria-label={
+                        showConfirmPassword ? 'Hide password' : 'Show password'
+                      }
+                      aria-pressed={showConfirmPassword}
+                      type="button"
+                      size="icon-xs"
+                      onClick={toggleConfirmPasswordVisibility}
+                    >
+                      {showConfirmPassword ? <EyeOffIcon /> : <EyeIcon />}
+                    </InputGroupButton>
+                  </InputGroupAddon>
+                </InputGroup>
+
+                {isInvalid && <FieldError errors={field.state.meta.errors} />}
+              </Field>
+            )
+          }}
+        />
+      </FieldGroup>
 
       <form.Subscribe
         selector={(state) => [state.canSubmit, state.isSubmitting]}
@@ -198,7 +199,7 @@ function RouteComponent() {
             className="mt-4 w-full"
             disabled={!canSubmit || isSubmitting}
           >
-            {isSubmitting ? <Spinner /> : 'Sign In'}
+            {isSubmitting ? <Spinner /> : 'Reset Password'}
           </Button>
         )}
       />

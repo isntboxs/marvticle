@@ -1,0 +1,26 @@
+import { type SVGProps } from 'react'
+
+type MarvIconProps = SVGProps<SVGSVGElement>
+
+export const MarvIcon = ({ ...props }: MarvIconProps) => {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      version="1.1"
+      viewBox="0 0 460.11 409.97"
+      {...props}
+    >
+      <polygon
+        points="55.81 0 171.96 292.62 285.86 0 338.25 0 218.7 301.18 221.52 301.74 287.57 235.69 342.81 235.69 171.42 409.97 0 235.69 55.24 235.69 122.44 302.87 122.72 299.17 3.42 0 55.81 0"
+        fill="currentColor"
+      />
+      <rect
+        x="369"
+        y="278.96"
+        width="91.11"
+        height="93.37"
+        fill="currentColor"
+      />
+    </svg>
+  )
+}

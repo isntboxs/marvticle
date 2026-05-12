@@ -18,6 +18,22 @@ const authorProfileSelect = {
   createdAt: userTable.createdAt,
 }
 
+const userProfileSelect = {
+  id: userTable.id,
+  name: userTable.name,
+  email: userTable.email,
+  username: userTable.username,
+  image: userTable.image,
+  banner: userTable.banner,
+  bio: userTable.bio,
+  pronouns: userTable.pronouns,
+  location: userTable.location,
+  education: userTable.education,
+  work: userTable.work,
+  verified: userTable.verified,
+  createdAt: userTable.createdAt,
+}
+
 const getAuthorByUsernameHandler = orpcBase.users.getAuthorByUsername.handler(
   async ({ context, input, errors }) => {
     const [author] = await context.db
@@ -36,6 +52,25 @@ const getAuthorByUsernameHandler = orpcBase.users.getAuthorByUsername.handler(
   }
 )
 
+const getUserByUsernameHandler = orpcBase.users.getUserByUsername.handler(
+  async ({ context, input, errors }) => {
+    const [user] = await context.db
+      .select(userProfileSelect)
+      .from(userTable)
+      .where(eq(userTable.username, input.username))
+      .limit(1)
+
+    if (!user) {
+      throw errors.NOT_FOUND({
+        message: `User @${input.username} not found.`,
+      })
+    }
+
+    return user
+  }
+)
+
 export const usersRouter = {
   getAuthorByUsername: getAuthorByUsernameHandler,
+  getUserByUsername: getUserByUsernameHandler,
 }

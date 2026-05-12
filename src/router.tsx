@@ -10,7 +10,7 @@ export function getRouter() {
 
   const router = createTanStackRouter({
     routeTree,
-    context: { orpc, queryClient },
+    context: { orpc, queryClient, breadcrumb: undefined },
     scrollRestoration: true,
     defaultPreload: 'intent',
     defaultPreloadStaleTime: 0,

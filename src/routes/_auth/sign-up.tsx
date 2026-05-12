@@ -26,6 +26,7 @@ function RouteComponent() {
   const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false)
 
   const navigate = useNavigate()
+  const search = Route.useSearch()
 
   const form = useForm({
     defaultValues: {
@@ -94,7 +95,7 @@ function RouteComponent() {
           description: 'Please sign in to continue.',
         })
 
-        void navigate({ to: '/sign-in', viewTransition: true })
+        void navigate({ to: '/sign-in', viewTransition: true, search })
       }
     },
   })

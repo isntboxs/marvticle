@@ -12,6 +12,7 @@ export const FOLDER_NAMES = [
   'posts/cover',
   'posts/content',
   'profiles/image',
+  'profiles/banner',
 ] as const
 
 export const IMAGE_MAX_FILE_SIZE = 1024 * 1024 * 5 // 5MB
