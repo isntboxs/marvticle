@@ -11,6 +11,7 @@ import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 
 import { type ReactNode } from 'react'
 
+import { TanStackRouterProgressProvider } from '#/components/providers/tanstack-router-progress-provider'
 import { ThemeProvider } from '#/components/providers/theme-provider'
 import { Toaster } from '#/components/ui/sonner'
 import { TooltipProvider } from '#/components/ui/tooltip'
@@ -96,10 +97,16 @@ function RootDocument({ children }: { children: ReactNode }) {
         <HeadContent />
       </head>
       <body>
-        <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
-          <TooltipProvider>{children}</TooltipProvider>
-          <Toaster position="top-right" />
-        </ThemeProvider>
+        <TanStackRouterProgressProvider
+          color="#2563eb"
+          height="3px"
+          options={{ showSpinner: false }}
+        >
+          <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
+            <TooltipProvider>{children}</TooltipProvider>
+            <Toaster position="top-right" />
+          </ThemeProvider>
+        </TanStackRouterProgressProvider>
         <TanStackDevtools
           config={{
             position: 'bottom-right',

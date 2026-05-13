@@ -1,24 +1,38 @@
 import { Outlet, createFileRoute } from '@tanstack/react-router'
 
+import { Loader } from '#/components/loader'
+import { MainBreadcrumb } from '#/components/main-breadcrumb'
+import { MainSidebar } from '#/components/main-sidebar'
 import {
   SidebarInset,
   SidebarProvider,
   useSidebar,
 } from '#/components/ui/sidebar'
-import { MainSidebar } from '#/components/main-sidebar'
 import { cn } from '#/lib/utils'
-import { MainBreadcrumb } from '#/components/main-breadcrumb'
 
 export const Route = createFileRoute('/_main')({
   component: RouteComponent,
+  pendingComponent: () => {
+    return (
+      <SidebarProvider>
+        <MainSidebar variant="floating" />
+
+        <SidebarInset>
+          <Wrapper>
+            <div className="flex h-[calc(100svh-5rem)] items-center justify-center">
+              <Loader.Inline />
+            </div>
+          </Wrapper>
+        </SidebarInset>
+      </SidebarProvider>
+    )
+  },
 })
 
 function RouteComponent() {
-  const { auth } = Route.useRouteContext()
-
   return (
     <SidebarProvider>
-      <MainSidebar variant="floating" auth={auth} />
+      <MainSidebar variant="floating" />
 
       <SidebarInset>
         <Wrapper>
