@@ -6,6 +6,7 @@ import {
   MessagesSquareIcon,
   VerifiedIcon,
 } from 'lucide-react'
+import { AnimatePresence, motion } from 'motion/react'
 
 import { Button } from '#/components/ui/button'
 import {
@@ -17,12 +18,21 @@ import {
 } from '#/components/ui/card'
 import { Separator } from '#/components/ui/separator'
 import { UserAvatar } from '#/components/user-avatar'
+import type { VoteDirectionType } from '#/db/schemas'
+import { useToggleVoteMutation } from '#/features/votes/hooks/use-votes'
 import { parseMarkdownToWords } from '#/lib/parse-markdown'
+import { cn } from '#/lib/utils'
 import type { RouterOutputs } from '#/orpc/routers'
 
 type ThreadCardProps = RouterOutputs['threads']['getMany']['items'][number]
 
 export const ThreadCard = (thread: ThreadCardProps) => {
+  const voteMutation = useToggleVoteMutation()
+
+  const handleVote = (direction: VoteDirectionType) => {
+    voteMutation.mutate({ slug: thread.slug, direction })
+  }
+
   return (
     <Card className="gap-0 p-0 ring-0">
       <CardHeader className="gap-2 p-0! [.border-b]:pb-0!">
@@ -70,14 +80,79 @@ export const ThreadCard = (thread: ThreadCardProps) => {
 
       <CardFooter className="w-full gap-4 border-0 p-0!">
         <div className="grid grid-cols-[1fr_auto_1fr] grid-rows-1 items-center gap-2">
-          <Button size="icon-sm" variant="ghost">
-            <ArrowBigUpIcon className="size-4" />
+          <Button
+            type="button"
+            aria-label="Upvote thread"
+            aria-pressed={thread.userVote === 'UPVOTE'}
+            onClick={() => handleVote('UPVOTE')}
+            size="icon-sm"
+            variant="ghost"
+          >
+            <motion.span
+              animate={
+                thread.userVote === 'UPVOTE'
+                  ? { scale: [1, 1.5, 0.9, 1.1, 1], rotate: [0, -10, 8, -4, 0] }
+                  : { scale: 1, rotate: 0 }
+              }
+              transition={{ duration: 0.4, ease: 'easeOut' }}
+            >
+              <ArrowBigUpIcon
+                className={cn(
+                  'size-4 transition-colors duration-300',
+                  thread.userVote === 'UPVOTE'
+                    ? 'fill-primary text-primary'
+                    : 'fill-none'
+                )}
+              />
+            </motion.span>
           </Button>
 
-          <span>0</span>
+          <div className="relative flex h-5 w-6 items-center justify-center overflow-hidden tabular-nums">
+            <AnimatePresence mode="popLayout" initial={false}>
+              <motion.span
+                key={thread.voteScore}
+                initial={{
+                  y: thread.userVote === 'UPVOTE' ? 10 : -10,
+                  opacity: 0,
+                }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{
+                  y: thread.userVote === 'UPVOTE' ? -10 : 10,
+                  opacity: 0,
+                }}
+                transition={{ duration: 0.2, ease: 'easeOut' }}
+                className="absolute text-sm"
+              >
+                {thread.voteScore}
+              </motion.span>
+            </AnimatePresence>
+          </div>
 
-          <Button size="icon-sm" variant="ghost">
-            <ArrowBigDownIcon className="size-4" />
+          <Button
+            type="button"
+            aria-label="Downvote thread"
+            aria-pressed={thread.userVote === 'DOWNVOTE'}
+            onClick={() => handleVote('DOWNVOTE')}
+            size="icon-sm"
+            variant="ghost"
+          >
+            <motion.span
+              animate={
+                thread.userVote === 'DOWNVOTE'
+                  ? { scale: [1, 1.5, 0.9, 1.1, 1], rotate: [0, 10, -8, 4, 0] }
+                  : { scale: 1, rotate: 0 }
+              }
+              transition={{ duration: 0.4, ease: 'easeOut' }}
+            >
+              <ArrowBigDownIcon
+                className={cn(
+                  'size-4 transition-colors duration-300',
+                  thread.userVote === 'DOWNVOTE'
+                    ? 'fill-primary text-primary'
+                    : 'fill-none'
+                )}
+              />
+            </motion.span>
           </Button>
         </div>
 

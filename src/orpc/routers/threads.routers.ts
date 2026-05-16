@@ -1,11 +1,13 @@
-import { and, desc, eq, lt, or } from 'drizzle-orm'
+import { and, desc, eq, lt, or, sql } from 'drizzle-orm'
 import limax from 'limax'
 import { nanoid } from 'nanoid'
 
-import { userTable } from '#/db/schemas'
+import { db } from '#/db'
+import { userTable, votesTable } from '#/db/schemas'
 import { threadsTable } from '#/db/schemas/threads'
 import { threadPaginationCursorSchema } from '#/features/threads/schemas/thread.schema'
 import type { ThreadPaginationCursor } from '#/features/threads/schemas/thread.schema'
+import type { ToggleVoteOutput } from '#/features/votes/schemas/votes.schema'
 import { orpcBase } from '#/orpc'
 import { orpcRequireAuthMiddleware } from '#/orpc/middlewares'
 
@@ -61,9 +63,19 @@ const getManyThreadHandler = orpcBase.threads.getMany.handler(
       .select({
         ...threadSelect,
         author: authorSelect,
+        voteScore: sql<number>`
+      count(case when ${votesTable.direction} = 'UPVOTE' then 1 end) -
+      count(case when ${votesTable.direction} = 'DOWNVOTE' then 1 end)
+    `.as('vote_score'),
+        userVote: sql<ToggleVoteOutput['userVote']>`
+      max(case when ${votesTable.userId} = ${context.auth?.user.id}
+      then ${votesTable.direction} end)
+    `.as('user_vote'),
       })
       .from(threadsTable)
       .innerJoin(userTable, eq(threadsTable.authorId, userTable.id))
+      .leftJoin(votesTable, eq(votesTable.threadId, threadsTable.id))
+      .groupBy(threadsTable.id, userTable.id)
       .where(
         cursor
           ? or(
@@ -103,9 +115,19 @@ const getOneThreadBySlugHandler = orpcBase.threads.getOne.handler(
       .select({
         ...threadSelect,
         author: authorSelect,
+        voteScore: sql<number>`
+      count(case when ${votesTable.direction} = 'UPVOTE' then 1 end) -
+      count(case when ${votesTable.direction} = 'DOWNVOTE' then 1 end)
+    `.as('vote_score'),
+        userVote: sql<ToggleVoteOutput['userVote']>`
+      max(case when ${votesTable.userId} = ${context.auth?.user.id}
+      then ${votesTable.direction} end)
+    `.as('user_vote'),
       })
       .from(threadsTable)
       .innerJoin(userTable, eq(threadsTable.authorId, userTable.id))
+      .leftJoin(votesTable, eq(votesTable.threadId, threadsTable.id))
+      .groupBy(threadsTable.id, userTable.id)
       .where(eq(threadsTable.slug, input.slug))
 
     if (!thread) {
@@ -137,8 +159,105 @@ const createThreadHandler = orpcBase
     return newThread
   })
 
+const toggleVoteHandler = orpcBase
+  .use(orpcRequireAuthMiddleware)
+  .threads.vote.handler(async ({ context, errors, input }) => {
+    const [existingThread] = await context.db
+      .select({
+        id: threadsTable.id,
+      })
+      .from(threadsTable)
+      .where(eq(threadsTable.slug, input.slug))
+
+    if (!existingThread) {
+      throw errors.NOT_FOUND({ message: 'Thread not found' })
+    }
+
+    const vote = await db.transaction(async (tx) => {
+      const [existingVote] = await tx
+        .select()
+        .from(votesTable)
+        .where(
+          and(
+            eq(votesTable.userId, context.auth.user.id),
+            eq(votesTable.threadId, existingThread.id)
+          )
+        )
+        .limit(1)
+
+      const currentVote = existingVote
+
+      if (!currentVote) {
+        await tx.insert(votesTable).values({
+          userId: context.auth.user.id,
+          threadId: existingThread.id,
+          direction: input.direction,
+        })
+
+        return {
+          action: 'VOTED',
+          userVote: input.direction,
+        }
+      } else if (currentVote.direction === input.direction) {
+        await tx
+          .delete(votesTable)
+          .where(
+            and(
+              eq(votesTable.userId, context.auth.user.id),
+              eq(votesTable.threadId, existingThread.id)
+            )
+          )
+
+        return {
+          action: 'UNVOTED',
+          userVote: null,
+        }
+      } else {
+        await tx
+          .update(votesTable)
+          .set({
+            direction: input.direction,
+          })
+          .where(
+            and(
+              eq(votesTable.userId, context.auth.user.id),
+              eq(votesTable.threadId, existingThread.id)
+            )
+          )
+
+        return {
+          action: 'CHANGED',
+          userVote: input.direction,
+        }
+      }
+    })
+
+    const [countVotes] = await context.db
+      .select({
+        voteScore: sql<number>`
+      count(case when ${votesTable.direction} = 'UPVOTE' then 1 end) -
+      count(case when ${votesTable.direction} = 'DOWNVOTE' then 1 end)
+    `.as('vote_score'),
+      })
+      .from(votesTable)
+      .where(eq(votesTable.threadId, existingThread.id))
+
+    if (!countVotes) {
+      throw errors.INTERNAL_SERVER_ERROR({
+        message: 'Failed to get total votes',
+      })
+    }
+
+    return {
+      action: vote.action,
+      userVote: vote.userVote,
+      voteScore: countVotes.voteScore,
+    } as ToggleVoteOutput
+  })
+
 export const threadsRouter = {
   getMany: getManyThreadHandler,
   getOne: getOneThreadBySlugHandler,
   create: createThreadHandler,
+  vote: toggleVoteHandler,
 }

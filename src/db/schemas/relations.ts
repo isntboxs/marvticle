@@ -3,12 +3,14 @@ import { relations } from 'drizzle-orm'
 import { accountTable, sessionTable, userTable } from '#/db/schemas/auth'
 import { commentsTable } from '#/db/schemas/comments'
 import { threadsTable } from '#/db/schemas/threads'
+import { votesTable } from '#/db/schemas/votes'
 
 export const userRelations = relations(userTable, ({ many }) => ({
   sessions: many(sessionTable),
   accounts: many(accountTable),
   threads: many(threadsTable),
   comments: many(commentsTable),
+  votes: many(votesTable),
 }))
 
 export const sessionRelations = relations(sessionTable, ({ one }) => ({
@@ -31,6 +33,7 @@ export const threadRelations = relations(threadsTable, ({ many, one }) => ({
     references: [userTable.id],
   }),
   comments: many(commentsTable),
+  votes: many(votesTable),
 }))
 
 export const commentRelations = relations(commentsTable, ({ many, one }) => ({
@@ -49,5 +52,16 @@ export const commentRelations = relations(commentsTable, ({ many, one }) => ({
   }),
   replies: many(commentsTable, {
     relationName: 'comment_replies',
+  }),
+}))
+
+export const voteRelations = relations(votesTable, ({ one }) => ({
+  user: one(userTable, {
+    fields: [votesTable.userId],
+    references: [userTable.id],
+  }),
+  thread: one(threadsTable, {
+    fields: [votesTable.threadId],
+    references: [threadsTable.id],
   }),
 }))

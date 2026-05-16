@@ -2,6 +2,7 @@ import { z } from 'zod'
 
 import { threadsTable } from '#/db/schemas/threads'
 import { userSelectSchema } from '#/features/users/schemas/users.schema'
+import { userVoteSchema } from '#/features/votes/schemas/votes.schema'
 import { createInsertSchema, createSelectSchema } from '#/schemas/drizzle-zod'
 
 export const DEFAULT_MIN = 1
@@ -25,6 +26,8 @@ export const threadSelectSchema = createSelectSchema(threadsTable)
       image: true,
       verified: true,
     }),
+    voteScore: z.coerce.number(),
+    userVote: userVoteSchema.nullable(),
   })
 
 export const threadPaginationCursorSchema = threadSelectSchema.pick({

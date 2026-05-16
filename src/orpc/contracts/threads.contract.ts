@@ -5,6 +5,10 @@ import {
   threadSelectSchema,
   threadsSchema,
 } from '#/features/threads/schemas/thread.schema'
+import {
+  toggleVoteInputSchema,
+  toggleVoteOutputSchema,
+} from '#/features/votes/schemas/votes.schema'
 import { orpcBaseContract as base } from '#/orpc/contracts/base.contract'
 
 const getManyThreadsContract = base
@@ -53,8 +57,23 @@ const createThreadContract = base
     })
   )
 
+const toggleVoteContract = base
+  .route({
+    path: '/threads/{slug}/vote',
+    method: 'POST',
+    summary: 'Toggle vote',
+    description: 'Toggle vote',
+    tags: ['Threads'],
+    operationId: 'toggleVote',
+    successStatus: 200,
+    successDescription: 'Vote toggled successfully',
+  })
+  .input(toggleVoteInputSchema)
+  .output(toggleVoteOutputSchema)
+
 export const threadsContract = {
   getMany: getManyThreadsContract,
   getOne: getOneThreadBySlugContract,
   create: createThreadContract,
+  vote: toggleVoteContract,
 }

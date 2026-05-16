@@ -11,7 +11,7 @@ import { toast } from 'sonner'
 import { DEFAULT_THREADS_LIMIT } from '#/features/threads/schemas/thread.schema'
 import { orpc } from '#/orpc/client'
 
-const threadsInfiniteQueryOptions = ({ limit }: { limit: number }) =>
+export const threadsInfiniteQueryOptions = ({ limit }: { limit: number }) =>
   orpc.threads.getMany.infiniteOptions({
     input: (pageParam: string | null) => ({
       limit,
