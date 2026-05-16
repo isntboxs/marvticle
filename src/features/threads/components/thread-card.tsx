@@ -82,6 +82,8 @@ export const ThreadCard = (thread: ThreadCardProps) => {
         <div className="grid grid-cols-[1fr_auto_1fr] grid-rows-1 items-center gap-2">
           <Button
             type="button"
+            aria-label="Upvote thread"
+            aria-pressed={thread.userVote === 'UPVOTE'}
             onClick={() => handleVote('UPVOTE')}
             size="icon-sm"
             variant="ghost"
@@ -109,9 +111,15 @@ export const ThreadCard = (thread: ThreadCardProps) => {
             <AnimatePresence mode="popLayout" initial={false}>
               <motion.span
                 key={thread.voteScore}
-                initial={{ y: thread.userVote === 'UPVOTE' ? 10 : -10, opacity: 0 }}
+                initial={{
+                  y: thread.userVote === 'UPVOTE' ? 10 : -10,
+                  opacity: 0,
+                }}
                 animate={{ y: 0, opacity: 1 }}
-                exit={{ y: thread.userVote === 'UPVOTE' ? -10 : 10, opacity: 0 }}
+                exit={{
+                  y: thread.userVote === 'UPVOTE' ? -10 : 10,
+                  opacity: 0,
+                }}
                 transition={{ duration: 0.2, ease: 'easeOut' }}
                 className="absolute text-sm"
               >
@@ -122,6 +130,8 @@ export const ThreadCard = (thread: ThreadCardProps) => {
 
           <Button
             type="button"
+            aria-label="Downvote thread"
+            aria-pressed={thread.userVote === 'DOWNVOTE'}
             onClick={() => handleVote('DOWNVOTE')}
             size="icon-sm"
             variant="ghost"

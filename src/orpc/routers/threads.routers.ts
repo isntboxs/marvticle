@@ -213,9 +213,17 @@ const toggleVoteHandler = orpcBase
           userVote: null,
         }
       } else {
-        await tx.update(votesTable).set({
-          direction: input.direction,
-        })
+        await tx
+          .update(votesTable)
+          .set({
+            direction: input.direction,
+          })
+          .where(
+            and(
+              eq(votesTable.userId, context.auth.user.id),
+              eq(votesTable.threadId, existingThread.id)
+            )
+          )
 
         return {
           action: 'CHANGED',

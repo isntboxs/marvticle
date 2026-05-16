@@ -24,7 +24,7 @@ function RouteComponent() {
   return (
     <div className="container mx-auto w-full max-w-2xl px-4 pt-4 pb-8">
       {!!auth && (
-        <div
+        <button
           className="flex w-full cursor-text items-center justify-between gap-4"
           onClick={handleCreatePost}
         >
@@ -37,7 +37,7 @@ function RouteComponent() {
           </div>
 
           <MessagesSquareIcon className="text-muted-foreground" />
-        </div>
+        </button>
       )}
 
       <div className="my-4 flex w-full items-center justify-between gap-4 border border-x-0 border-border py-2">

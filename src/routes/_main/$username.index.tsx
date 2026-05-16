@@ -5,9 +5,10 @@ export const Route = createFileRoute('/_main/$username/')({
 })
 
 function RouteComponent() {
+  const { username } = Route.useParams()
   return (
     <div>
-      <h1>Username</h1>
+      <h1>Username: {username}</h1>
     </div>
   )
 }

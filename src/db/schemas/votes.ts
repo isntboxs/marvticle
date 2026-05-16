@@ -1,5 +1,6 @@
 import type { InferEnum } from 'drizzle-orm'
 import {
+  index,
   pgEnum,
   pgTable,
   primaryKey,
@@ -38,5 +39,6 @@ export const votesTable = pgTable(
       columns: [table.userId, table.threadId],
       name: 'pk_votes_user_id_thread_id',
     }),
+    index('idx_votes_thread_id').on(table.threadId),
   ]
 )
