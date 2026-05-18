@@ -1,7 +1,11 @@
 import { z } from 'zod'
 
 import { voteDirectionEnum, votesThreadsTable } from '#/db/schemas'
-import { createInsertSchema } from '#/schemas/drizzle-zod'
+import {
+  createInsertSchema,
+  voteDirectionNullableSchema,
+  voteDirectionSchema,
+} from '#/schemas/drizzle-zod'
 
 export const toggleVoteSchema = createInsertSchema(votesThreadsTable, {
   direction: (schema) =>
@@ -19,23 +23,16 @@ export const toggleVoteSchema = createInsertSchema(votesThreadsTable, {
 })
 
 const actionVoteSchema = z.enum(['VOTED', 'UNVOTED', 'CHANGED'])
-export const userVoteSchema = z.enum([...voteDirectionEnum.enumValues])
 
 export const toggleVoteInputSchema = z.object({
   slug: z.string(),
-  direction: userVoteSchema.refine(
-    (value) => [...voteDirectionEnum.enumValues].includes(value),
-    {
-      error: `Vote must be one of ${voteDirectionEnum.enumValues.join(' or ')}`,
-      path: ['direction'],
-    }
-  ),
+  direction: voteDirectionSchema,
 })
 
-export const toggleVoteOutputSchema = z.object({
+export const voteThreadOutputSchema = z.object({
   action: actionVoteSchema,
-  userVote: userVoteSchema.nullable(),
+  userVote: voteDirectionNullableSchema,
   voteScore: z.coerce.number(),
 })
 
-export type ToggleVoteOutput = z.infer<typeof toggleVoteOutputSchema>
+export type VoteThreadOutput = z.infer<typeof voteThreadOutputSchema>

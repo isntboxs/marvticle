@@ -1,9 +1,12 @@
+import { eq, sql } from 'drizzle-orm'
 import limax from 'limax'
 import { nanoid } from 'nanoid'
 
+import { userTable, votesThreadsTable } from '#/db/schemas'
 import { threadsTable } from '#/db/schemas/threads'
 import { orpcBase } from '#/orpc'
 import { authenticated } from '#/orpc/middlewares'
+import type { VoteDirectionNullable } from '#/schemas/drizzle-zod'
 
 const generateSlug = (title: string): string => {
   return `${limax(title)}-${nanoid(9)}`
@@ -40,13 +43,13 @@ const threadSelect = {
   updatedAt: threadsTable.updatedAt,
 }
 
-// const authorSelect = {
-//   id: userTable.id,
-//   name: userTable.name,
-//   username: userTable.username,
-//   image: userTable.image,
-//   verified: userTable.verified,
-// }
+const authorSelect = {
+  id: userTable.id,
+  name: userTable.name,
+  username: userTable.username,
+  image: userTable.image,
+  verified: userTable.verified,
+}
 
 // const getManyThreadHandler = orpcBase.threads.getMany.handler(
 //   async ({ context, errors, input }) => {
@@ -106,34 +109,33 @@ const threadSelect = {
 //   }
 // )
 
-// const getOneThreadBySlugHandler = orpcBase.threads.getOne.handler(
-//   async ({ context, errors, input }) => {
-//     const [thread] = await context.db
-//       .select({
-//         ...threadSelect,
-//         author: authorSelect,
-//         voteScore: sql<number>`
-//       count(case when ${votesTable.direction} = 'UPVOTE' then 1 end) -
-//       count(case when ${votesTable.direction} = 'DOWNVOTE' then 1 end)
-//     `.as('vote_score'),
-//         userVote: sql<ToggleVoteOutput['userVote']>`
-//       max(case when ${votesTable.userId} = ${context.auth?.user.id ?? null}
-//       then ${votesTable.direction} end)
-//     `.as('user_vote'),
-//       })
-//       .from(threadsTable)
-//       .innerJoin(userTable, eq(threadsTable.authorId, userTable.id))
-//       .leftJoin(votesTable, eq(votesTable.threadId, threadsTable.id))
-//       .groupBy(threadsTable.id, userTable.id)
-//       .where(eq(threadsTable.slug, input.slug))
+const getOneThreadHandler = orpcBase.threads.getOne.handler(
+  async ({ context, errors, input }) => {
+    const [thread] = await context.db
+      .select({
+        ...threadSelect,
+        author: authorSelect,
+        isVoted: sql<VoteDirectionNullable>`
+      max(case when ${votesThreadsTable.userId} = ${context.auth?.user.id ?? null}
+      then ${votesThreadsTable.direction} end)
+    `.as('is_voted'),
+      })
+      .from(threadsTable)
+      .innerJoin(userTable, eq(threadsTable.authorId, userTable.id))
+      .leftJoin(
+        votesThreadsTable,
+        eq(votesThreadsTable.threadId, threadsTable.id)
+      )
+      .groupBy(threadsTable.id, userTable.id)
+      .where(eq(threadsTable.slug, input.slug))
 
-//     if (!thread) {
-//       throw errors.NOT_FOUND({ message: 'Thread not found' })
-//     }
+    if (!thread) {
+      throw errors.NOT_FOUND({ message: 'Thread not found' })
+    }
 
-//     return thread
-//   }
-// )
+    return thread
+  }
+)
 
 const createThreadHandler = orpcBase
   .use(authenticated)
@@ -264,7 +266,7 @@ const createThreadHandler = orpcBase
 
 export const threadsRouter = {
   // getMany: getManyThreadHandler,
-  // getOne: getOneThreadBySlugHandler,
+  getOne: getOneThreadHandler,
   create: createThreadHandler,
   // vote: toggleVoteHandler,
 }

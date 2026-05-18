@@ -15,4 +15,9 @@ export const { createInsertSchema, createSelectSchema, createUpdateSchema } =
 
 export const pointsSchema = z.coerce.number().min(0)
 export const commentsCountSchema = z.coerce.number().min(0)
-export const userVoteSchema = z.enum([...voteDirectionEnum.enumValues])
+export const voteDirectionSchema = z.enum([...voteDirectionEnum.enumValues])
+export const voteDirectionNullableSchema = voteDirectionSchema
+  .nullable()
+  .default(null)
+
+export type VoteDirectionNullable = z.infer<typeof voteDirectionNullableSchema>

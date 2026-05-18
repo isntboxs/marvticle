@@ -12,7 +12,7 @@ import {
   createInsertSchema,
   createSelectSchema,
   pointsSchema,
-  userVoteSchema,
+  voteDirectionNullableSchema,
 } from '#/schemas/drizzle-zod'
 
 export const threadOutputSchema = createSelectSchema(threadsTable)
@@ -36,7 +36,7 @@ export const threadOutputSchema = createSelectSchema(threadsTable)
       image: true,
       verified: true,
     }),
-    isVoted: userVoteSchema.nullable().default(null),
+    isVoted: voteDirectionNullableSchema,
   })
 
 export const threadPaginationCursorSchema = threadOutputSchema.pick({
@@ -63,7 +63,7 @@ export const threadsSchema = z.object({
   nextCursor: z.string().nullable(),
 })
 
-export const getOneThreadBySlugSchema = threadOutputSchema.pick({
+export const getOneThreadInputSchema = threadOutputSchema.pick({
   slug: true,
 })
 

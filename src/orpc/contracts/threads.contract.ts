@@ -1,4 +1,5 @@
 import {
+  getOneThreadInputSchema,
   threadInsertSchema,
   threadOutputSchema,
 } from '#/features/threads/schemas/thread.schema'
@@ -18,19 +19,19 @@ import { orpcBaseContract as base } from '#/orpc/contracts/base.contract'
 //   .input(getManyThreadsParamsSchema)
 //   .output(threadsSchema)
 
-// const getOneThreadBySlugContract = base
-//   .route({
-//     path: '/threads/{slug}',
-//     method: 'GET',
-//     summary: 'Get one thread by slug',
-//     description: 'Get one thread by slug',
-//     tags: ['Threads'],
-//     operationId: 'getOneThreadBySlug',
-//     successStatus: 200,
-//     successDescription: 'Thread retrieved successfully',
-//   })
-//   .input(getOneThreadBySlugSchema)
-//   .output(threadOutputSchema)
+const getOneThreadContract = base
+  .route({
+    path: '/threads/{slug}',
+    method: 'GET',
+    summary: 'Get one thread',
+    description: 'Get one thread',
+    tags: ['Threads'],
+    operationId: 'getOneThread',
+    successStatus: 200,
+    successDescription: 'Thread retrieved successfully',
+  })
+  .input(getOneThreadInputSchema)
+  .output(threadOutputSchema)
 
 const createThreadContract = base
   .route({
@@ -62,7 +63,7 @@ const createThreadContract = base
 
 export const threadsContract = {
   // getMany: getManyThreadsContract,
-  // getOne: getOneThreadBySlugContract,
+  getOne: getOneThreadContract,
   create: createThreadContract,
   // vote: toggleVoteContract,
 }
