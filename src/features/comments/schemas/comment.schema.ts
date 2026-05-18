@@ -102,7 +102,6 @@ export const commentCreateRootSchema = createInsertSchema(commentsTable, {
   content: () => commentContentSchema,
 })
   .pick({
-    parentId: true,
     content: true,
   })
   .extend({

@@ -109,6 +109,42 @@ export const useCreateCommentMutation = () => {
   )
 }
 
+export const useCreateReplyMutation = ({
+  threadSlug,
+}: {
+  threadSlug: string
+}) => {
+  const queryClient = useQueryClient()
+
+  return useMutation(
+    orpc.comments.createReply.mutationOptions({
+      onSuccess: (_reply, variables) => {
+        toast.success('Reply created', {
+          description: 'Your reply has been posted.',
+        })
+
+        void queryClient.invalidateQueries({
+          queryKey: threadCommentsInfiniteQueryOptions({
+            threadSlug,
+          }).queryKey,
+        })
+
+        void queryClient.invalidateQueries({
+          queryKey: commentRepliesInfiniteQueryOptions({
+            parentId: variables.parentId,
+          }).queryKey,
+        })
+      },
+
+      onError: (error) => {
+        toast.error('Failed to reply', {
+          description: error.message,
+        })
+      },
+    })
+  )
+}
+
 export const useUpdateCommentMutation = ({
   threadSlug,
 }: {

@@ -55,6 +55,7 @@ import {
   createHighlighter,
   withFontStyleHtmlStyles,
 } from '#/lib/shiki.bundle'
+import { cn } from '#/lib/utils'
 
 const schema = BlockNoteSchema.create().extend({
   blockSpecs: {
@@ -75,9 +76,15 @@ interface Props {
   value?: string
   onChange?: (value: string) => void
   onBlur?: () => void
+  className?: string
 }
 
-export default function BlockNoteEditor({ value, onChange, onBlur }: Props) {
+export default function BlockNoteEditor({
+  value,
+  onChange,
+  onBlur,
+  className,
+}: Props) {
   const editor = useCreateBlockNote({
     schema,
   })
@@ -88,7 +95,8 @@ export default function BlockNoteEditor({ value, onChange, onBlur }: Props) {
       editor.replaceBlocks(editor.document, blocks)
     }
 
-    loadInitialContent()
+    void loadInitialContent()
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const handleMarkdownChange = async () => {
@@ -98,7 +106,10 @@ export default function BlockNoteEditor({ value, onChange, onBlur }: Props) {
 
   return (
     <BlockNoteView
-      className="marvticle-block-note-editor [&_.bn-editor]:rounded-none! [&_.bn-editor]:bg-transparent! [&_.bn-editor]:px-0!"
+      className={cn(
+        'marvticle-block-note-editor [&_.bn-editor]:rounded-none! [&_.bn-editor]:bg-transparent! [&_.bn-editor]:px-0!',
+        className
+      )}
       editor={editor}
       sideMenu={false}
       onBlur={onBlur}

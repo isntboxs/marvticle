@@ -1,15 +1,27 @@
+import { useForm } from '@tanstack/react-form'
+import { ClientOnly, getRouteApi, useLocation } from '@tanstack/react-router'
+
 import type { FC } from 'react'
 import { useState } from 'react'
 
+import { ArrowBendLeftUpIcon } from '@phosphor-icons/react'
 import { formatDistanceToNowStrict } from 'date-fns'
 import { MinusIcon, PlusIcon } from 'lucide-react'
 
+import BlockNoteEditor from '#/components/block-note/editor'
 import { MarkdownRenderer } from '#/components/markdown-renderer'
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
+import { Field, FieldGroup } from '#/components/ui/field'
 import { Separator } from '#/components/ui/separator'
+import { Spinner } from '#/components/ui/spinner'
 import { UserAvatar } from '#/components/user-avatar'
-import { useCommentRepliesInfiniteQuery } from '#/features/comments/hooks/use-comments'
+import {
+  useCommentRepliesInfiniteQuery,
+  useCreateReplyMutation,
+} from '#/features/comments/hooks/use-comments'
+import { commentCreateReplySchema } from '#/features/comments/schemas/comment.schema'
+import { cn } from '#/lib/utils'
 import type { RouterOutputs } from '#/orpc/routers'
 
 type CommentOutput = RouterOutputs['comments']['getByThread']['items'][number]
@@ -25,12 +37,20 @@ interface CommentsThreadTreeNodeProps {
   threadAuthorId: string
 }
 
+interface CommentReplyFormProps {
+  parentId: string
+  onCloseForm: () => void
+}
+
+const routeApi = getRouteApi('/_main/$username_/threads/$threadSlug')
+
 const CommentsThreadTreeNode: FC<CommentsThreadTreeNodeProps> = ({
   comment,
   depth,
   threadAuthorId,
 }) => {
-  const [isExpanded, setIsExpanded] = useState<boolean>(true)
+  const [isExpanded, setIsExpanded] = useState<boolean>(false)
+  const [showReplyForm, setShowReplyForm] = useState<boolean>(false)
 
   const { replies, totalCount } = useCommentRepliesInfiniteQuery({
     parentId: comment.id,
@@ -38,15 +58,25 @@ const CommentsThreadTreeNode: FC<CommentsThreadTreeNodeProps> = ({
   })
 
   const isAuthor = comment.author.id === threadAuthorId
-  const visualDepth = Math.min(depth, 16)
   const relativeTime = (date: Date) => formatDistanceToNowStrict(date)
+
+  const handleReply = () => {
+    setShowReplyForm((value) => !value)
+  }
 
   const toggleExpand = () => {
     setIsExpanded((value) => !value)
   }
 
   return (
-    <div style={{ marginLeft: visualDepth > 0 ? 32 : 0 }} className="space-y-2">
+    <div
+      className={cn(
+        'space-y-4 transition-all duration-500 ease-in-out',
+        depth > 0
+          ? 'ml-4 border-l-2 border-muted pl-6'
+          : 'border-l-0 border-transparent'
+      )}
+    >
       <div className="flex items-center gap-2">
         <UserAvatar
           image={comment.author.image}
@@ -54,24 +84,35 @@ const CommentsThreadTreeNode: FC<CommentsThreadTreeNodeProps> = ({
         />
 
         <div className="flex-1">
-          <div className="-mt-1 flex items-center -space-y-1.5 font-heading text-sm font-semibold">
+          <div
+            className={cn(
+              '-mt-1 flex items-center -space-y-1 font-heading text-sm font-semibold'
+            )}
+          >
             <span className="max-w-[15ch] truncate">{comment.author.name}</span>
 
             <Separator className="mx-1 mt-0.5 rounded-full data-horizontal:size-1" />
 
-            <span className="mt-1 text-xs font-normal text-muted-foreground">
+            <span
+              className={cn(
+                'mt-1.5 text-xs font-normal text-muted-foreground',
+                isAuthor && 'mt-0.5'
+              )}
+            >
               {relativeTime(new Date(comment.createdAt))}
             </span>
 
-            <Separator className="mx-1 mt-0.5 rounded-full data-horizontal:size-1" />
-
             {!!isAuthor && (
-              <Badge
-                variant="secondary"
-                className="mt-1.5 px-1 py-0.5 text-[11px]"
-              >
-                Author
-              </Badge>
+              <>
+                <Separator className="mx-1 mt-0.5 rounded-full data-horizontal:size-1" />
+
+                <Badge
+                  variant="secondary"
+                  className="mt-1.5 px-1 py-0.5 text-[11px]"
+                >
+                  Author
+                </Badge>
+              </>
             )}
           </div>
 
@@ -81,30 +122,55 @@ const CommentsThreadTreeNode: FC<CommentsThreadTreeNodeProps> = ({
         </div>
       </div>
 
-      <div className="ml-10 space-y-2">
+      <div className="space-y-2">
         <MarkdownRenderer content={comment.content} />
       </div>
 
-      {totalCount > 0 && (
-        <Button
-          type="button"
-          variant="ghost"
-          size="xs"
-          className="ml-10 px-1.5"
-          onClick={toggleExpand}
-        >
-          {isExpanded ? (
-            <>
-              <MinusIcon />
-              <span>Hide replies</span>
-            </>
-          ) : (
-            <>
-              <PlusIcon />
-              <span>{totalCount} replies</span>
-            </>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          {!comment.isDeleted && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={handleReply}
+            >
+              <ArrowBendLeftUpIcon />
+              <span>Reply</span>
+            </Button>
           )}
-        </Button>
+        </div>
+
+        {totalCount > 0 && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="xs"
+            className="px-1.5"
+            onClick={toggleExpand}
+          >
+            {isExpanded ? (
+              <>
+                <MinusIcon />
+                <span>Hide replies</span>
+              </>
+            ) : (
+              <>
+                <PlusIcon />
+                <span>{totalCount} replies</span>
+              </>
+            )}
+          </Button>
+        )}
+      </div>
+
+      {showReplyForm && (
+        <div className="mt-4 ml-4 border-l-2 border-muted pl-6">
+          <CommentReplyForm
+            parentId={comment.id}
+            onCloseForm={() => setShowReplyForm((value) => !value)}
+          />
+        </div>
       )}
 
       {isExpanded &&
@@ -121,12 +187,12 @@ const CommentsThreadTreeNode: FC<CommentsThreadTreeNodeProps> = ({
   )
 }
 
-export const CommentsThreadTree = ({
+export const CommentsThreadTree: React.FC<CommentsThreadTreeProps> = ({
   comments,
   threadAuthorId,
-}: CommentsThreadTreeProps) => {
+}) => {
   return (
-    <div className="space-y-4">
+    <div className="relative space-y-8">
       {comments.map((comment) => (
         <CommentsThreadTreeNode
           key={comment.id}
@@ -136,5 +202,106 @@ export const CommentsThreadTree = ({
         />
       ))}
     </div>
+  )
+}
+
+const CommentReplyForm: FC<CommentReplyFormProps> = ({
+  parentId,
+  onCloseForm,
+}) => {
+  const { auth } = routeApi.useRouteContext()
+  const { threadSlug } = routeApi.useParams()
+  const location = useLocation()
+  const navigate = routeApi.useNavigate()
+
+  const createReplyMutation = useCreateReplyMutation({ threadSlug })
+
+  const form = useForm({
+    defaultValues: {
+      parentId,
+      content: '',
+    },
+    validators: {
+      onChange: commentCreateReplySchema,
+      onSubmit: commentCreateReplySchema,
+    },
+    onSubmit: async ({ value, formApi }) => {
+      await createReplyMutation.mutateAsync(value)
+      formApi.reset()
+      onCloseForm()
+    },
+  })
+
+  const handleNavigateToSignIn = () => {
+    void navigate({
+      to: '/sign-in',
+      search: {
+        redirect_to: location.pathname,
+      },
+    })
+  }
+
+  return (
+    <form
+      id="comment-reply-form"
+      onSubmit={(e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        void form.handleSubmit()
+      }}
+      className="mb-8"
+    >
+      <FieldGroup>
+        <form.Field
+          name="content"
+          children={(field) => {
+            const isInvalid =
+              field.state.meta.isTouched && !field.state.meta.isValid
+            return (
+              <Field data-invalid={isInvalid}>
+                <ClientOnly>
+                  <BlockNoteEditor
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e)}
+                    className="[&_.bn-editor]:min-h-24 [&_.bn-editor]:border! [&_.bn-editor]:border-border! [&_.bn-editor]:px-2!"
+                  />
+                </ClientOnly>
+              </Field>
+            )
+          }}
+        />
+      </FieldGroup>
+
+      {auth ? (
+        <form.Subscribe
+          selector={(state) => [state.canSubmit, state.isSubmitting]}
+          children={([canSubmit, isSubmitting]) => (
+            <Button
+              form="comment-reply-form"
+              type="submit"
+              disabled={!canSubmit || isSubmitting}
+              className="mt-4"
+            >
+              {isSubmitting ? <Spinner /> : 'Post Comment'}
+            </Button>
+          )}
+        />
+      ) : (
+        <form.Subscribe
+          selector={(state) => [state.canSubmit, state.isSubmitting]}
+          children={([canSubmit, isSubmitting]) => (
+            <Button
+              type="button"
+              onClick={handleNavigateToSignIn}
+              disabled={!canSubmit || isSubmitting}
+              className="mt-4"
+            >
+              {isSubmitting ? <Spinner /> : 'Post Comment'}
+            </Button>
+          )}
+        />
+      )}
+    </form>
   )
 }
