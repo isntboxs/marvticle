@@ -10,7 +10,7 @@ export const userSelectSchema = createSelectSchema(userTable, {
   bio: (schema) => schema.optional(),
   pronouns: (schema) => schema.optional(),
   location: (schema) => schema.optional(),
-  verified: (schema) => schema.optional(),
+  verified: (schema) => schema.optional().default(false),
 }).pick({
   id: true,
   name: true,

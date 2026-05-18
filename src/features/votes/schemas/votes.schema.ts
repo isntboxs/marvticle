@@ -1,9 +1,9 @@
 import { z } from 'zod'
 
-import { voteDirectionEnum, votesTable } from '#/db/schemas'
+import { voteDirectionEnum, votesThreadsTable } from '#/db/schemas'
 import { createInsertSchema } from '#/schemas/drizzle-zod'
 
-export const toggleVoteSchema = createInsertSchema(votesTable, {
+export const toggleVoteSchema = createInsertSchema(votesThreadsTable, {
   direction: (schema) =>
     schema.refine(
       (value) => [...voteDirectionEnum.enumValues].includes(value),

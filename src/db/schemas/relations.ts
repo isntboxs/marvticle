@@ -3,14 +3,15 @@ import { relations } from 'drizzle-orm'
 import { accountTable, sessionTable, userTable } from '#/db/schemas/auth'
 import { commentsTable } from '#/db/schemas/comments'
 import { threadsTable } from '#/db/schemas/threads'
-import { votesTable } from '#/db/schemas/votes'
+import { votesCommentsTable, votesThreadsTable } from '#/db/schemas/votes'
 
 export const userRelations = relations(userTable, ({ many }) => ({
   sessions: many(sessionTable),
   accounts: many(accountTable),
   threads: many(threadsTable),
   comments: many(commentsTable),
-  votes: many(votesTable),
+  votesThreads: many(votesThreadsTable),
+  votesComments: many(votesCommentsTable),
 }))
 
 export const sessionRelations = relations(sessionTable, ({ one }) => ({
@@ -33,7 +34,9 @@ export const threadRelations = relations(threadsTable, ({ many, one }) => ({
     references: [userTable.id],
   }),
   comments: many(commentsTable),
-  votes: many(votesTable),
+  votesThreads: many(votesThreadsTable, {
+    relationName: 'thread_votes',
+  }),
 }))
 
 export const commentRelations = relations(commentsTable, ({ many, one }) => ({
@@ -53,15 +56,34 @@ export const commentRelations = relations(commentsTable, ({ many, one }) => ({
   replies: many(commentsTable, {
     relationName: 'comment_replies',
   }),
+  votesComments: many(votesCommentsTable, {
+    relationName: 'comment_votes',
+  }),
 }))
 
-export const voteRelations = relations(votesTable, ({ one }) => ({
+export const voteThreadsRelations = relations(votesThreadsTable, ({ one }) => ({
   user: one(userTable, {
-    fields: [votesTable.userId],
+    fields: [votesThreadsTable.userId],
     references: [userTable.id],
   }),
   thread: one(threadsTable, {
-    fields: [votesTable.threadId],
+    fields: [votesThreadsTable.threadId],
     references: [threadsTable.id],
+    relationName: 'thread_votes',
   }),
 }))
+
+export const voteCommentsRelations = relations(
+  votesCommentsTable,
+  ({ one }) => ({
+    user: one(userTable, {
+      fields: [votesCommentsTable.userId],
+      references: [userTable.id],
+    }),
+    comment: one(commentsTable, {
+      fields: [votesCommentsTable.commentId],
+      references: [commentsTable.id],
+      relationName: 'comment_votes',
+    }),
+  })
+)

@@ -1,43 +1,36 @@
 import {
-  getOneThreadBySlugSchema,
-  getManyThreadsParamsSchema,
   threadInsertSchema,
-  threadSelectSchema,
-  threadsSchema,
+  threadOutputSchema,
 } from '#/features/threads/schemas/thread.schema'
-import {
-  toggleVoteInputSchema,
-  toggleVoteOutputSchema,
-} from '#/features/votes/schemas/votes.schema'
 import { orpcBaseContract as base } from '#/orpc/contracts/base.contract'
 
-const getManyThreadsContract = base
-  .route({
-    path: '/threads',
-    method: 'GET',
-    summary: 'Get many threads',
-    description: 'Get many threads',
-    tags: ['Threads'],
-    operationId: 'getManyThreads',
-    successStatus: 200,
-    successDescription: 'Threads retrieved successfully',
-  })
-  .input(getManyThreadsParamsSchema)
-  .output(threadsSchema)
+// const getManyThreadsContract = base
+//   .route({
+//     path: '/threads',
+//     method: 'GET',
+//     summary: 'Get many threads',
+//     description: 'Get many threads',
+//     tags: ['Threads'],
+//     operationId: 'getManyThreads',
+//     successStatus: 200,
+//     successDescription: 'Threads retrieved successfully',
+//   })
+//   .input(getManyThreadsParamsSchema)
+//   .output(threadsSchema)
 
-const getOneThreadBySlugContract = base
-  .route({
-    path: '/threads/{slug}',
-    method: 'GET',
-    summary: 'Get one thread by slug',
-    description: 'Get one thread by slug',
-    tags: ['Threads'],
-    operationId: 'getOneThreadBySlug',
-    successStatus: 200,
-    successDescription: 'Thread retrieved successfully',
-  })
-  .input(getOneThreadBySlugSchema)
-  .output(threadSelectSchema)
+// const getOneThreadBySlugContract = base
+//   .route({
+//     path: '/threads/{slug}',
+//     method: 'GET',
+//     summary: 'Get one thread by slug',
+//     description: 'Get one thread by slug',
+//     tags: ['Threads'],
+//     operationId: 'getOneThreadBySlug',
+//     successStatus: 200,
+//     successDescription: 'Thread retrieved successfully',
+//   })
+//   .input(getOneThreadBySlugSchema)
+//   .output(threadOutputSchema)
 
 const createThreadContract = base
   .route({
@@ -51,29 +44,25 @@ const createThreadContract = base
     successDescription: 'Thread created successfully',
   })
   .input(threadInsertSchema)
-  .output(
-    threadSelectSchema.pick({
-      slug: true,
-    })
-  )
+  .output(threadOutputSchema)
 
-const toggleVoteContract = base
-  .route({
-    path: '/threads/{slug}/vote',
-    method: 'POST',
-    summary: 'Toggle vote',
-    description: 'Toggle vote',
-    tags: ['Threads'],
-    operationId: 'toggleVote',
-    successStatus: 200,
-    successDescription: 'Vote toggled successfully',
-  })
-  .input(toggleVoteInputSchema)
-  .output(toggleVoteOutputSchema)
+// const toggleVoteContract = base
+//   .route({
+//     path: '/threads/{slug}/vote',
+//     method: 'POST',
+//     summary: 'Toggle vote',
+//     description: 'Toggle vote',
+//     tags: ['Threads'],
+//     operationId: 'toggleVote',
+//     successStatus: 200,
+//     successDescription: 'Vote toggled successfully',
+//   })
+//   .input(toggleVoteInputSchema)
+//   .output(toggleVoteOutputSchema)
 
 export const threadsContract = {
-  getMany: getManyThreadsContract,
-  getOne: getOneThreadBySlugContract,
+  // getMany: getManyThreadsContract,
+  // getOne: getOneThreadBySlugContract,
   create: createThreadContract,
-  vote: toggleVoteContract,
+  // vote: toggleVoteContract,
 }
