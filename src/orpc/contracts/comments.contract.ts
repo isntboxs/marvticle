@@ -1,104 +1,102 @@
 import {
-  commentCreateRootSchema,
-  commentCreateReplySchema,
-  commentDeleteSchema,
-  commentSelectSchema,
-  commentUpdateSchema,
-  threadCommentsSchema,
-  getCommentRepliesSchema,
-  getThreadCommentsSchema,
+  commentOutputSchema,
+  createCommentThreadInputSchema,
+  listCommentRepliesInputSchema,
+  listCommentsOutputSchema,
+  listCommentsThreadInputSchema,
+  replyToCommentThreadInputSchema,
 } from '#/features/comments/schemas/comment.schema'
 import { orpcBaseContract as base } from '#/orpc/contracts/base.contract'
 
-const getThreadCommentsContract = base
+const listCommentsByThreadContract = base
   .route({
     path: '/threads/{threadSlug}/comments',
     method: 'GET',
-    summary: 'Get thread comments',
-    description: 'Get threaded comments for a thread.',
+    summary: 'List thread comments',
+    description: 'List comments for a thread.',
     tags: ['Comments'],
-    operationId: 'getThreadComments',
+    operationId: 'listCommentsThread',
     successStatus: 200,
-    successDescription: 'Thread comments retrieved successfully',
+    successDescription: 'Thread comments listed successfully',
   })
-  .input(getThreadCommentsSchema)
-  .output(threadCommentsSchema)
+  .input(listCommentsThreadInputSchema)
+  .output(listCommentsOutputSchema)
 
-const getCommentRepliesContract = base
+const listCommentRepliesContract = base
   .route({
     path: '/comments/{parentId}/replies',
     method: 'GET',
-    summary: 'Get comment replies',
-    description: 'Get replies for a comment.',
+    summary: 'List comment replies',
+    description: 'List replies for a comment.',
     tags: ['Comments'],
-    operationId: 'getCommentReplies',
+    operationId: 'listCommentReplies',
     successStatus: 200,
-    successDescription: 'Comment replies retrieved successfully',
+    successDescription: 'Comment replies listed successfully',
   })
-  .input(getCommentRepliesSchema)
-  .output(threadCommentsSchema)
+  .input(listCommentRepliesInputSchema)
+  .output(listCommentsOutputSchema)
 
-const createCommentRootContract = base
+const createCommentThreadContract = base
   .route({
     path: '/threads/{threadSlug}/comments',
     method: 'POST',
     summary: 'Create comment',
     description: 'Create a comment on a thread.',
     tags: ['Comments'],
-    operationId: 'createCommentRoot',
+    operationId: 'createCommentThread',
     successStatus: 200,
     successDescription: 'Comment created successfully',
   })
-  .input(commentCreateRootSchema)
-  .output(commentSelectSchema)
+  .input(createCommentThreadInputSchema)
+  .output(commentOutputSchema)
 
-const createCommentReplyContract = base
+const replyCommentThreadContract = base
   .route({
     path: '/comments/{parentId}/replies',
     method: 'POST',
-    summary: 'Create comment reply',
-    description: 'Create a reply to an existing comment.',
+    summary: 'Reply to comment',
+    description: 'Reply to an existing comment on a thread.',
     tags: ['Comments'],
-    operationId: 'createCommentReply',
+    operationId: 'replyCommentThread',
     successStatus: 200,
-    successDescription: 'Comment reply created successfully',
+    successDescription: 'Comment replied successfully',
   })
-  .input(commentCreateReplySchema)
-  .output(commentSelectSchema)
+  .input(replyToCommentThreadInputSchema)
+  .output(commentOutputSchema)
 
-const updateCommentContract = base
-  .route({
-    path: '/comments/{id}',
-    method: 'PATCH',
-    summary: 'Update comment',
-    description: 'Update an existing comment owned by the current user.',
-    tags: ['Comments'],
-    operationId: 'updateComment',
-    successStatus: 200,
-    successDescription: 'Comment updated successfully',
-  })
-  .input(commentUpdateSchema)
-  .output(commentSelectSchema)
+// const updateCommentContract = base
+//   .route({
+//     path: '/comments/{id}',
+//     method: 'PATCH',
+//     summary: 'Update comment',
+//     description: 'Update an existing comment owned by the current user.',
+//     tags: ['Comments'],
+//     operationId: 'updateComment',
+//     successStatus: 200,
+//     successDescription: 'Comment updated successfully',
+//   })
+//   .input(commentUpdateSchema)
+//   .output(commentSelectSchema)
 
-const deleteCommentContract = base
-  .route({
-    path: '/comments/{id}',
-    method: 'DELETE',
-    summary: 'Delete comment',
-    description: 'Soft delete an existing comment owned by the current user.',
-    tags: ['Comments'],
-    operationId: 'deleteComment',
-    successStatus: 200,
-    successDescription: 'Comment deleted successfully',
-  })
-  .input(commentDeleteSchema)
-  .output(commentSelectSchema)
+// const deleteCommentContract = base
+//   .route({
+//     path: '/comments/{id}',
+//     method: 'DELETE',
+//     summary: 'Delete comment',
+//     description: 'Soft delete an existing comment owned by the current user.',
+//     tags: ['Comments'],
+//     operationId: 'deleteComment',
+//     successStatus: 200,
+//     successDescription: 'Comment deleted successfully',
+//   })
+//   .input(commentDeleteSchema)
+//   .output(commentSelectSchema)
 
 export const commentsContract = {
-  getByThread: getThreadCommentsContract,
-  getReplies: getCommentRepliesContract,
-  createRoot: createCommentRootContract,
-  createReply: createCommentReplyContract,
-  update: updateCommentContract,
-  delete: deleteCommentContract,
+  list: listCommentsByThreadContract,
+  listReplies: listCommentRepliesContract,
+  create: createCommentThreadContract,
+  reply: replyCommentThreadContract,
+  // update: updateCommentContract,
+  // delete: deleteCommentContract,
 }

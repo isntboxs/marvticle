@@ -27,6 +27,7 @@ export const limitThreadsSchema = z.coerce
 export const feedThreadSchema = z.enum(['latest', 'discover'])
 export const sortThreadSchema = z.enum(['top'])
 export const periodThreadSchema = z.enum(['week', 'month', 'year', 'all'])
+export const sortByCommentsSchema = z.enum(['top', 'latest', 'oldest'])
 
 export const pointsSchema = z.coerce.number()
 export const commentsCountSchema = z.coerce.number().min(0)
@@ -58,6 +59,7 @@ export const cursorPayloadSchema = z.discriminatedUnion('mode', [
   discoverCursorSchema,
 ])
 
+export type SortByComments = z.infer<typeof sortByCommentsSchema>
 export type VoteAction = z.infer<typeof voteActionSchema>
 export type VoteDirectionNullable = z.infer<typeof voteDirectionNullableSchema>
 export type CursorPayload = z.infer<typeof cursorPayloadSchema>

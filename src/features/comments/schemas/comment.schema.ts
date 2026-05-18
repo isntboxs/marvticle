@@ -1,31 +1,42 @@
 import { z } from 'zod'
 
+import {
+  COMMENT_CONTENT_MAX_LENGTH,
+  DEFAULT_COMMENTS_LIMIT,
+  DEFAULT_MIN,
+  MAX_COMMENTS_LIMIT,
+} from '#/configs'
 import { commentsTable } from '#/db/schemas/comments'
-import { createInsertSchema, createSelectSchema } from '#/schemas/drizzle-zod'
-
-export const COMMENT_CONTENT_MAX_LENGTH = 5_000
-export const DEFAULT_COMMENTS_LIMIT = 10
-export const MAX_COMMENTS_LIMIT = 50
-export const DEFAULT_MIN = 1
+import {
+  commentsCountSchema,
+  createInsertSchema,
+  createSelectSchema,
+  pointsSchema,
+  sortByCommentsSchema,
+  voteDirectionNullableSchema,
+} from '#/schemas/drizzle-zod'
+import type { VoteDirectionNullable } from '#/schemas/drizzle-zod'
 
 export const commentContentSchema = z
   .string()
   .trim()
-  .min(1, { error: 'Comment is required' })
+  .min(DEFAULT_MIN, { error: 'Comment is required' })
   .max(COMMENT_CONTENT_MAX_LENGTH, {
     error: `Comment must be at most ${COMMENT_CONTENT_MAX_LENGTH} characters long`,
   })
 
 type CommentSelectSchema = {
   id: string
-  createdAt: Date
-  updatedAt: Date
   threadId: string
   parentId: string | null
-  depth: number
-  deletedAt: Date | null
   content: string
+  depth: number
   isDeleted: boolean
+  points: number
+  commentsCount: number
+  deletedAt: Date | null
+  createdAt: Date
+  updatedAt: Date
   author: {
     id: string
     name: string
@@ -33,9 +44,12 @@ type CommentSelectSchema = {
     image: string | null
   }
   childComments?: CommentSelectSchema[]
+  isVoted: VoteDirectionNullable
 }
 
-export const commentSelectSchema: z.ZodType<CommentSelectSchema> =
+const childCommentsSchema = z.lazy(() => commentOutputSchema.array().optional())
+
+export const commentOutputSchema: z.ZodType<CommentSelectSchema> =
   createSelectSchema(commentsTable)
     .pick({
       id: true,
@@ -43,13 +57,17 @@ export const commentSelectSchema: z.ZodType<CommentSelectSchema> =
       parentId: true,
       content: true,
       depth: true,
+      points: true,
+      commentsCount: true,
       createdAt: true,
       updatedAt: true,
       deletedAt: true,
     })
     .extend({
-      depth: z.coerce.number().int().min(0),
       content: z.string(),
+      depth: z.coerce.number().min(0),
+      points: pointsSchema,
+      commentsCount: commentsCountSchema,
       isDeleted: z.boolean(),
       author: z.object({
         id: z.uuid(),
@@ -57,10 +75,11 @@ export const commentSelectSchema: z.ZodType<CommentSelectSchema> =
         username: z.string(),
         image: z.string().nullable(),
       }),
-      childComments: z.lazy(() => commentSelectSchema.array().optional()),
+      childComments: childCommentsSchema,
+      isVoted: voteDirectionNullableSchema,
     })
 
-export const getThreadCommentsSchema = z.object({
+export const listCommentsThreadInputSchema = z.object({
   threadSlug: z.string(),
   limit: z.coerce
     .number()
@@ -69,11 +88,12 @@ export const getThreadCommentsSchema = z.object({
     .max(MAX_COMMENTS_LIMIT)
     .optional()
     .default(DEFAULT_COMMENTS_LIMIT),
+  sortBy: sortByCommentsSchema.default('top'),
   cursor: z.string().min(DEFAULT_MIN).optional(),
   includeReplies: z.coerce.boolean().optional().default(false),
 })
 
-export const getCommentRepliesSchema = z.object({
+export const listCommentRepliesInputSchema = z.object({
   parentId: z.uuid(),
   limit: z.coerce
     .number()
@@ -82,25 +102,21 @@ export const getCommentRepliesSchema = z.object({
     .max(MAX_COMMENTS_LIMIT)
     .optional()
     .default(DEFAULT_COMMENTS_LIMIT),
+  sortBy: sortByCommentsSchema.default('top'),
   cursor: z.string().min(DEFAULT_MIN).optional(),
 })
 
-export const commentPaginationCursorSchema = createSelectSchema(
-  commentsTable
-).pick({
-  id: true,
-  createdAt: true,
-})
-
-export const threadCommentsSchema = z.object({
-  items: commentSelectSchema.array(),
-  totalCount: z.coerce.number().int().min(0),
+export const listCommentsOutputSchema = z.object({
+  items: commentOutputSchema.array(),
   nextCursor: z.string().nullable(),
 })
 
-export const commentCreateRootSchema = createInsertSchema(commentsTable, {
-  content: () => commentContentSchema,
-})
+export const createCommentThreadInputSchema = createInsertSchema(
+  commentsTable,
+  {
+    content: () => commentContentSchema,
+  }
+)
   .pick({
     content: true,
   })
@@ -109,9 +125,12 @@ export const commentCreateRootSchema = createInsertSchema(commentsTable, {
     content: commentContentSchema,
   })
 
-export const commentCreateReplySchema = createInsertSchema(commentsTable, {
-  content: () => commentContentSchema,
-})
+export const replyToCommentThreadInputSchema = createInsertSchema(
+  commentsTable,
+  {
+    content: () => commentContentSchema,
+  }
+)
   .pick({
     content: true,
   })
@@ -120,15 +139,13 @@ export const commentCreateReplySchema = createInsertSchema(commentsTable, {
     content: commentContentSchema,
   })
 
-export const commentUpdateSchema = z.object({
+export const commentUpdateInputSchema = z.object({
   id: z.uuid(),
   content: commentContentSchema,
 })
 
-export const commentDeleteSchema = z.object({
+export const commentDeleteInputSchema = z.object({
   id: z.uuid(),
 })
 
-export type CommentPaginationCursor = z.infer<
-  typeof commentPaginationCursorSchema
->
+export type ListCommentsOutput = z.infer<typeof listCommentsOutputSchema>
