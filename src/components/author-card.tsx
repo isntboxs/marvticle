@@ -7,7 +7,6 @@ import {
   School2Icon,
 } from 'lucide-react'
 
-import type { RouterOutputs } from '#/orpc/routers'
 import { GeneratedBanner } from '#/components/generated-banner'
 import { AspectRatio } from '#/components/ui/aspect-ratio'
 import { Button } from '#/components/ui/button'
@@ -20,16 +19,24 @@ import {
 import { Separator } from '#/components/ui/separator'
 import { Skeleton } from '#/components/ui/skeleton'
 import { UserAvatar } from '#/components/user-avatar'
+import type { RouterOutputs } from '#/orpc/routers'
 import { getPublicOrExternalUrl } from '#/utils/storage'
 
+type AuthorProfile = RouterOutputs['users']['getUserByUsername'] & {
+  education?: string | null
+  work?: string | null
+}
+
+type AuthorSummary = Pick<AuthorProfile, 'name' | 'username' | 'image'>
+
 interface AuthorCardProps {
-  author: RouterOutputs['users']['getAuthorByUsername']
+  author: AuthorProfile
   onFollow?: () => void
   isFollowing?: boolean
 }
 
 interface AuthorCardFallbackProps {
-  author: RouterOutputs['posts']['getMany']['items'][number]['author']
+  author: AuthorSummary
   onFollow?: () => void
   isFollowing?: boolean
 }

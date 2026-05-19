@@ -111,6 +111,7 @@ export const listCommentRepliesInputSchema = z.object({
 export const listCommentsOutputSchema = z.object({
   items: commentThreadOutputSchema.array(),
   nextCursor: z.string().nullable(),
+  totalCount: commentsCountSchema,
 })
 
 export const createCommentThreadInputSchema = createInsertSchema(
@@ -149,5 +150,10 @@ export const commentUpdateThreadInputSchema = z.object({
 export const commentDeleteThreadInputSchema = z.object({
   id: z.uuid(),
 })
+
+export const commentCreateRootSchema = createCommentThreadInputSchema
+export const commentCreateReplySchema = replyToCommentThreadInputSchema
+export const commentUpdateSchema = commentUpdateThreadInputSchema
+export const commentDeleteSchema = commentDeleteThreadInputSchema
 
 export type ListCommentsOutput = z.infer<typeof listCommentsOutputSchema>

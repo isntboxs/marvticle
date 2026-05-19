@@ -92,7 +92,7 @@ const deleteThreadContract = base
     description: 'Delete thread',
     tags: ['Threads'],
     operationId: 'deleteThread',
-    successStatus: 204,
+    successStatus: 200,
     successDescription: 'Thread deleted successfully',
   })
   .input(deleteThreadInputSchema)

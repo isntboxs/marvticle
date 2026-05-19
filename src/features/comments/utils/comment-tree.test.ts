@@ -1,9 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import {
-  buildCommentTree,
-  type ThreadComment,
-} from '#/features/comments/utils/comment-tree'
+import type { ThreadComment } from '#/features/comments/utils/comment-tree'
+import { buildCommentTree } from '#/features/comments/utils/comment-tree'
 
 const author = {
   name: 'Marv',

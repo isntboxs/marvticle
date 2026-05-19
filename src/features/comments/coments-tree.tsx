@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 
+import { formatDistanceToNowStrict } from 'date-fns'
 import {
   ChevronUp,
   ChevronDown,
@@ -8,7 +9,6 @@ import {
   Reply,
   Share,
 } from 'lucide-react'
-import { formatDistanceToNowStrict } from 'date-fns'
 
 import { Avatar, AvatarFallback, AvatarImage } from '#/components/ui/avatar'
 import { Button } from '#/components/ui/button'
@@ -17,8 +17,7 @@ import { Textarea } from '#/components/ui/textarea'
 import type { RouterOutputs } from '#/orpc/routers'
 
 // Derive type directly from the API so it never drifts
-type ApiComment =
-  RouterOutputs['comments']['getByThread']['items'][number]
+type ApiComment = RouterOutputs['comments']['list']['items'][number]
 
 // Props for the internal Comment component
 interface CommentProps {
@@ -60,9 +59,7 @@ const Comment: React.FC<CommentProps> = ({
     }
   }
 
-  const displayName = comment.isDeleted
-    ? '[deleted]'
-    : (comment.author.name ?? comment.author.username)
+  const displayName = comment.isDeleted ? '[deleted]' : comment.author.name
 
   const relativeTime = formatDistanceToNowStrict(new Date(comment.createdAt), {
     addSuffix: true,
@@ -100,7 +97,7 @@ const Comment: React.FC<CommentProps> = ({
 
               <div className="mb-3 text-sm leading-relaxed">
                 {comment.isDeleted ? (
-                  <span className="italic text-muted-foreground">
+                  <span className="text-muted-foreground italic">
                     [deleted]
                   </span>
                 ) : (

@@ -6,6 +6,7 @@ import { userTable, votesThreadsTable } from '#/db/schemas'
 import { threadsTable } from '#/db/schemas/threads'
 import { decodeCursor, encodeCursor } from '#/lib/cursor'
 import { orpcBase } from '#/orpc'
+import type { ORPCContext } from '#/orpc'
 import { authenticated } from '#/orpc/middlewares'
 import type { VoteAction, VoteDirectionNullable } from '#/schemas/drizzle-zod'
 
@@ -55,6 +56,33 @@ const authorSelect = {
   verified: userTable.verified,
 }
 
+const viewerThreadVoteCondition = (viewerId: string | undefined) =>
+  viewerId
+    ? and(
+        eq(votesThreadsTable.threadId, threadsTable.id),
+        eq(votesThreadsTable.userId, viewerId)
+      )
+    : sql`false`
+
+const selectThreadBySlug = async (context: ORPCContext, slug: string) => {
+  const [thread] = await context.db
+    .select({
+      ...threadSelect,
+      author: authorSelect,
+      isVoted: votesThreadsTable.direction,
+    })
+    .from(threadsTable)
+    .innerJoin(userTable, eq(threadsTable.authorId, userTable.id))
+    .leftJoin(
+      votesThreadsTable,
+      viewerThreadVoteCondition(context.auth?.user.id)
+    )
+    .where(eq(threadsTable.slug, slug))
+    .limit(1)
+
+  return thread ?? null
+}
+
 const listThreadsHandler = orpcBase.threads.list.handler(
   async ({ context, errors, input }) => {
     const { auth, db } = context
@@ -81,7 +109,11 @@ const listThreadsHandler = orpcBase.threads.list.handler(
     }
 
     if (after) {
-      if (isTopSort && 'points' in after) {
+      if (isTopSort) {
+        if (after.mode !== 'top') {
+          throw errors.BAD_REQUEST({ message: 'Invalid thread cursor' })
+        }
+
         conditions.push(
           or(
             lt(threadsTable.points, after.points),
@@ -91,7 +123,11 @@ const listThreadsHandler = orpcBase.threads.list.handler(
             )
           )
         )
-      } else if (isDiscover && 'trendingScore' in after) {
+      } else if (isDiscover) {
+        if (after.mode !== 'discover') {
+          throw errors.BAD_REQUEST({ message: 'Invalid thread cursor' })
+        }
+
         conditions.push(
           or(
             sql`${trendingScoreExpr} < ${after.trendingScore}`,
@@ -101,7 +137,11 @@ const listThreadsHandler = orpcBase.threads.list.handler(
             )
           )
         )
-      } else if ('createdAt' in after) {
+      } else {
+        if (after.mode !== 'latest') {
+          throw errors.BAD_REQUEST({ message: 'Invalid thread cursor' })
+        }
+
         conditions.push(
           or(
             lt(threadsTable.createdAt, after.createdAt),
@@ -118,21 +158,14 @@ const listThreadsHandler = orpcBase.threads.list.handler(
       .select({
         ...threadSelect,
         author: authorSelect,
-        isVoted: sql<VoteDirectionNullable>`
-          max(case when ${votesThreadsTable.userId} = ${auth?.user.id ?? null}
-          then ${votesThreadsTable.direction} end)
-        `.as('is_voted'),
+        isVoted: votesThreadsTable.direction,
         trendingScore: isDiscover
           ? trendingScoreExpr.as('trending_score')
           : sql<number>`0`,
       })
       .from(threadsTable)
       .innerJoin(userTable, eq(threadsTable.authorId, userTable.id))
-      .leftJoin(
-        votesThreadsTable,
-        eq(votesThreadsTable.threadId, threadsTable.id)
-      )
-      .groupBy(threadsTable.id, userTable.id)
+      .leftJoin(votesThreadsTable, viewerThreadVoteCondition(auth?.user.id))
       .where(conditions.length ? and(...conditions) : undefined)
       .orderBy(
         ...(isTopSort
@@ -173,23 +206,7 @@ const listThreadsHandler = orpcBase.threads.list.handler(
 
 const getOneThreadHandler = orpcBase.threads.getOne.handler(
   async ({ context, errors, input }) => {
-    const [thread] = await context.db
-      .select({
-        ...threadSelect,
-        author: authorSelect,
-        isVoted: sql<VoteDirectionNullable>`
-      max(case when ${votesThreadsTable.userId} = ${context.auth?.user.id ?? null}
-      then ${votesThreadsTable.direction} end)
-    `.as('is_voted'),
-      })
-      .from(threadsTable)
-      .innerJoin(userTable, eq(threadsTable.authorId, userTable.id))
-      .leftJoin(
-        votesThreadsTable,
-        eq(votesThreadsTable.threadId, threadsTable.id)
-      )
-      .groupBy(threadsTable.id, userTable.id)
-      .where(eq(threadsTable.slug, input.slug))
+    const thread = await selectThreadBySlug(context, input.slug)
 
     if (!thread) {
       throw errors.NOT_FOUND({ message: 'Thread not found' })
@@ -223,7 +240,7 @@ const createThreadHandler = orpcBase
         id: context.auth.user.id,
         name: context.auth.user.name,
         username: context.auth.user.username,
-        image: context.auth.user.image,
+        image: context.auth.user.image ?? null,
         verified: context.auth.user.verified,
       },
       isVoted: null,
@@ -236,11 +253,7 @@ const updateThreadHandler = orpcBase
     const { db, auth } = context
     const { slug, title, content } = input
 
-    const [thread] = await db
-      .select({ ...threadSelect, author: authorSelect })
-      .from(threadsTable)
-      .innerJoin(userTable, eq(threadsTable.authorId, userTable.id))
-      .where(eq(threadsTable.slug, slug))
+    const thread = await selectThreadBySlug(context, slug)
 
     if (!thread) {
       throw errors.NOT_FOUND({ message: 'Thread not found' })
@@ -254,38 +267,23 @@ const updateThreadHandler = orpcBase
 
     const newSlug = title && title !== thread.title ? generateSlug(title) : slug
 
-    const [updatedThread] = await db
+    await db
       .update(threadsTable)
       .set({
         slug: newSlug,
-        ...(title && title !== thread.title && { title }),
-        ...(content && content !== thread.content && { content }),
+        ...(title !== undefined && title !== thread.title && { title }),
+        ...(content !== undefined && content !== thread.content && { content }),
         updatedAt: new Date(),
       })
       .where(eq(threadsTable.id, thread.id))
-      .returning({
-        ...threadSelect,
-        isVoted: sql<VoteDirectionNullable>`
-      max(case when ${votesThreadsTable.userId} = ${auth.user.id}
-      then ${votesThreadsTable.direction} end)
-    `.as('is_voted'),
-      })
+
+    const updatedThread = await selectThreadBySlug(context, newSlug)
 
     if (!updatedThread) {
       throw errors.INTERNAL_SERVER_ERROR({ message: 'Failed to update thread' })
     }
 
-    return {
-      ...updatedThread,
-      author: {
-        id: auth.user.id,
-        name: auth.user.name,
-        username: auth.user.username,
-        image: auth.user.image,
-        verified: auth.user.verified,
-      },
-      isVoted: updatedThread.isVoted,
-    }
+    return updatedThread
   })
 
 const deleteThreadHandler = orpcBase
@@ -294,18 +292,14 @@ const deleteThreadHandler = orpcBase
     const { db, auth } = context
     const { slug } = input
 
-    const [thread] = await db
-      .select({ ...threadSelect, author: authorSelect })
-      .from(threadsTable)
-      .innerJoin(userTable, eq(threadsTable.authorId, userTable.id))
-      .where(eq(threadsTable.slug, slug))
+    const thread = await selectThreadBySlug(context, slug)
 
     if (!thread) {
       throw errors.NOT_FOUND({ message: 'Thread not found' })
     }
 
     if (thread.author.id !== auth.user.id) {
-      throw errors.UNAUTHORIZED({
+      throw errors.FORBIDDEN({
         message: 'You are not the author of this thread',
       })
     }
@@ -409,8 +403,8 @@ const voteThreadHandler = orpcBase
 
       return {
         action,
-        userVote: resultDirection,
-        newPoints: updateThread.points,
+        points: updateThread.points,
+        isVoted: resultDirection,
       }
     })
 

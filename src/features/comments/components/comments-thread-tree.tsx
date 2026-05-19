@@ -24,7 +24,7 @@ import { commentCreateReplySchema } from '#/features/comments/schemas/comment.sc
 import { cn } from '#/lib/utils'
 import type { RouterOutputs } from '#/orpc/routers'
 
-type CommentOutput = RouterOutputs['comments']['getByThread']['items'][number]
+type CommentOutput = RouterOutputs['comments']['list']['items'][number]
 
 interface CommentsThreadTreeProps {
   comments: CommentOutput[]
@@ -58,6 +58,7 @@ const CommentsThreadTreeNode: FC<CommentsThreadTreeNodeProps> = ({
   })
 
   const isAuthor = comment.author.id === threadAuthorId
+  const repliesCount = isExpanded ? totalCount : comment.commentsCount
   const relativeTime = (date: Date) => formatDistanceToNowStrict(date)
 
   const handleReply = () => {
@@ -141,7 +142,7 @@ const CommentsThreadTreeNode: FC<CommentsThreadTreeNodeProps> = ({
           )}
         </div>
 
-        {totalCount > 0 && (
+        {repliesCount > 0 && (
           <Button
             type="button"
             variant="ghost"
@@ -157,7 +158,7 @@ const CommentsThreadTreeNode: FC<CommentsThreadTreeNodeProps> = ({
             ) : (
               <>
                 <PlusIcon />
-                <span>{totalCount} replies</span>
+                <span>{repliesCount} replies</span>
               </>
             )}
           </Button>

@@ -14,8 +14,8 @@ export const voteThreadInputSchema = z.object({
 
 export const voteThreadOutputSchema = z.object({
   action: voteActionSchema,
-  userVote: voteDirectionNullableSchema,
-  newPoints: pointsSchema,
+  points: pointsSchema,
+  isVoted: voteDirectionNullableSchema,
 })
 
 export const voteCommentThreadInputSchema = z.object({
@@ -25,8 +25,8 @@ export const voteCommentThreadInputSchema = z.object({
 
 export const voteCommentThreadOutputSchema = z.object({
   action: voteActionSchema,
-  userVote: voteDirectionNullableSchema,
-  newPoints: pointsSchema,
+  points: pointsSchema,
+  isVoted: voteDirectionNullableSchema,
 })
 
 export type VoteThreadOutput = z.infer<typeof voteThreadOutputSchema>

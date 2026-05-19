@@ -1,15 +1,15 @@
-import { formatDate, formatDistanceToNowStrict } from 'date-fns'
-
 import { Link } from '@tanstack/react-router'
+
 import {
   BookmarkIcon,
   ChatCircleIcon,
   ThumbsUpIcon,
 } from '@phosphor-icons/react'
+import { formatDate, formatDistanceToNowStrict } from 'date-fns'
 import { EyeIcon } from 'lucide-react'
-import type { RouterOutputs } from '#/orpc/routers'
-import { Button } from '#/components/ui/button'
+
 import { AspectRatio } from '#/components/ui/aspect-ratio'
+import { Button } from '#/components/ui/button'
 import { Card, CardContent, CardFooter, CardHeader } from '#/components/ui/card'
 import { Separator } from '#/components/ui/separator'
 import { UserAvatar } from '#/components/user-avatar'
@@ -18,13 +18,28 @@ import { getPostReadTime } from '#/lib/posts'
 import { cn } from '#/lib/utils'
 import { getStorageUrl } from '#/utils/storage'
 
-type Props = RouterOutputs['posts']['getMany']['items'][number]
+type Props = {
+  slug: string
+  title: string
+  content: string
+  coverImage?: string | null
+  publishedAt?: Date | string | null
+  updatedAt: Date | string
+  likesCount: number
+  commentsCount: number
+  viewsCount: number
+  author: {
+    name: string
+    username: string
+    image?: string | null
+  }
+}
 
 export const PostFeedCard = (post: Props) => {
   const authorUsername = post.author.username
   const postDetailParams = {
     username: post.author.username,
-    postSlug: post.slug,
+    threadSlug: post.slug,
   }
   const publishedAt = post.publishedAt ? new Date(post.publishedAt) : null
   const updatedAt = new Date(post.updatedAt)
@@ -82,7 +97,7 @@ export const PostFeedCard = (post: Props) => {
 
       <CardContent className="px-0 pr-4 pl-16">
         <Link
-          to="/$username/$postSlug"
+          to="/$username/threads/$threadSlug"
           params={postDetailParams}
           viewTransition
           className="transition-all ease-in-out hover:text-muted-foreground"

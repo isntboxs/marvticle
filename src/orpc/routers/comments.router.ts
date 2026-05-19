@@ -1,5 +1,5 @@
 import { ORPCError } from '@orpc/client'
-import { and, asc, desc, eq, isNull, lt, or, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, gt, isNull, lt, or, sql } from 'drizzle-orm'
 
 import { threadsTable, votesCommentsTable } from '#/db/schemas'
 import { userTable } from '#/db/schemas/auth'
@@ -38,6 +38,14 @@ const authorSelect = {
   image: userTable.image,
 }
 
+const viewerCommentVoteCondition = (viewerId: string | undefined) =>
+  viewerId
+    ? and(
+        eq(votesCommentsTable.commentId, commentsTable.id),
+        eq(votesCommentsTable.userId, viewerId)
+      )
+    : sql`false`
+
 const queryComments = async ({
   context,
   threadId,
@@ -61,7 +69,6 @@ const queryComments = async ({
 
   const conditions = []
 
-  // scope: top-level atau children
   if (threadId) {
     conditions.push(eq(commentsTable.threadId, threadId))
     conditions.push(isNull(commentsTable.parentId))
@@ -69,13 +76,12 @@ const queryComments = async ({
     conditions.push(eq(commentsTable.parentId, parentId))
   }
 
-  // exclude soft deleted dari listing (tapi tetap include di tree buat context)
-  // kalau mau include deleted, hapus baris ini
-  // conditions.push(isNull(commentsTable.deletedAt))
-
-  // cursor condition
   if (after) {
-    if (sortBy === 'top' && 'points' in after) {
+    if (sortBy === 'top') {
+      if (after.mode !== 'top') {
+        throw new ORPCError('BAD_REQUEST', { message: 'Invalid cursor' })
+      }
+
       conditions.push(
         or(
           lt(commentsTable.points, after.points),
@@ -85,15 +91,30 @@ const queryComments = async ({
           )
         )
       )
-    } else if ('createdAt' in after) {
-      const dir = sortBy === 'oldest' ? 'asc' : 'desc'
+    } else if (sortBy === 'oldest') {
+      if (after.mode !== 'oldest') {
+        throw new ORPCError('BAD_REQUEST', { message: 'Invalid cursor' })
+      }
+
       conditions.push(
         or(
-          dir === 'asc'
-            ? lt(commentsTable.createdAt, new Date(after.createdAt)) // oldest: ambil yang lebih baru
-            : lt(commentsTable.createdAt, new Date(after.createdAt)),
+          gt(commentsTable.createdAt, after.createdAt),
           and(
-            eq(commentsTable.createdAt, new Date(after.createdAt)),
+            eq(commentsTable.createdAt, after.createdAt),
+            gt(commentsTable.id, after.id)
+          )
+        )
+      )
+    } else {
+      if (after.mode !== 'latest') {
+        throw new ORPCError('BAD_REQUEST', { message: 'Invalid cursor' })
+      }
+
+      conditions.push(
+        or(
+          lt(commentsTable.createdAt, after.createdAt),
+          and(
+            eq(commentsTable.createdAt, after.createdAt),
             lt(commentsTable.id, after.id)
           )
         )
@@ -112,18 +133,14 @@ const queryComments = async ({
     .select({
       ...commentSelect,
       author: authorSelect,
-      isVoted: sql<VoteDirectionNullable>`
-          max(case when ${votesCommentsTable.userId} = ${context.auth?.user.id ?? null}
-          then ${votesCommentsTable.direction} end)
-        `.as('is_voted'),
+      isVoted: votesCommentsTable.direction,
     })
     .from(commentsTable)
     .innerJoin(userTable, eq(commentsTable.authorId, userTable.id))
     .leftJoin(
       votesCommentsTable,
-      eq(votesCommentsTable.commentId, commentsTable.id)
+      viewerCommentVoteCondition(context.auth?.user.id)
     )
-    .groupBy(commentsTable.id, userTable.id)
     .where(conditions.length ? and(...conditions) : undefined)
     .orderBy(...orderBy)
     .limit(limit + 1)
@@ -139,7 +156,6 @@ const mapToCommentList = (
     ...comment,
     isDeleted: comment.deletedAt !== null,
     childComments: repliesMap[comment.id]?.items ?? [],
-    nextCursor: repliesMap[comment.id]?.nextCursor ?? null,
   }))
 }
 
@@ -147,7 +163,8 @@ const buildCommentsListResponse = (
   rows: Awaited<ReturnType<typeof queryComments>>,
   limit: number,
   sortBy: SortByComments,
-  repliesMap: Record<string, ListCommentsOutput>
+  repliesMap: Record<string, ListCommentsOutput>,
+  totalCount: number
 ): ListCommentsOutput => {
   let nextCursor: string | null = null
   const hasMore = rows.length > limit
@@ -158,13 +175,18 @@ const buildCommentsListResponse = (
     nextCursor = encodeCursor(
       sortBy === 'top'
         ? { mode: 'top', id: lastItem.id, points: lastItem.points }
-        : { mode: 'latest', id: lastItem.id, createdAt: lastItem.createdAt }
+        : {
+            mode: sortBy === 'oldest' ? 'oldest' : 'latest',
+            id: lastItem.id,
+            createdAt: lastItem.createdAt,
+          }
     )
   }
 
   return {
     items: mapToCommentList(rawItems, repliesMap),
     nextCursor,
+    totalCount,
   }
 }
 
@@ -174,7 +196,10 @@ const listCommentsThreadHandler = orpcBase.comments.list.handler(
     const { threadSlug, includeReplies, limit, cursor, sortBy } = input
 
     const [thread] = await db
-      .select({ id: threadsTable.id })
+      .select({
+        id: threadsTable.id,
+        commentsCount: threadsTable.commentsCount,
+      })
       .from(threadsTable)
       .where(eq(threadsTable.slug, threadSlug))
       .limit(1)
@@ -202,7 +227,6 @@ const listCommentsThreadHandler = orpcBase.comments.list.handler(
             context,
             parentId: comment.id,
             sortBy,
-            cursor,
             limit: 2,
           })
 
@@ -210,13 +234,20 @@ const listCommentsThreadHandler = orpcBase.comments.list.handler(
             replies,
             2,
             sortBy,
-            {}
+            {},
+            comment.commentsCount
           )
         })
       )
     }
 
-    return buildCommentsListResponse(rows, limit, sortBy, repliesMap)
+    return buildCommentsListResponse(
+      rows,
+      limit,
+      sortBy,
+      repliesMap,
+      thread.commentsCount
+    )
   }
 )
 
@@ -226,7 +257,11 @@ const listCommentRepliesHandler = orpcBase.comments.listReplies.handler(
     const { parentId, limit, cursor, sortBy } = input
 
     const [parentComment] = await db
-      .select({ id: commentsTable.id, threadId: commentsTable.threadId })
+      .select({
+        id: commentsTable.id,
+        threadId: commentsTable.threadId,
+        commentsCount: commentsTable.commentsCount,
+      })
       .from(commentsTable)
       .where(eq(commentsTable.id, parentId))
       .limit(1)
@@ -243,7 +278,13 @@ const listCommentRepliesHandler = orpcBase.comments.listReplies.handler(
       limit,
     })
 
-    return buildCommentsListResponse(comments, limit, sortBy, {})
+    return buildCommentsListResponse(
+      comments,
+      limit,
+      sortBy,
+      {},
+      parentComment.commentsCount
+    )
   }
 )
 
@@ -295,7 +336,7 @@ const createCommentThreadHandler = orpcBase
         id: auth.user.id,
         name: auth.user.name,
         username: auth.user.username,
-        image: auth.user.image,
+        image: auth.user.image ?? null,
         verified: auth.user.verified,
       },
       isVoted: null,
@@ -388,18 +429,11 @@ const replyCommentThreadHandler = orpcBase
         .select({
           ...commentSelect,
           author: authorSelect,
-          isVoted: sql<VoteDirectionNullable>`
-            max(case when ${votesCommentsTable.userId} = ${auth.user.id}
-            then ${votesCommentsTable.direction} end)
-          `.as('is_voted'),
+          isVoted: votesCommentsTable.direction,
         })
         .from(commentsTable)
         .innerJoin(userTable, eq(commentsTable.authorId, userTable.id))
-        .leftJoin(
-          votesCommentsTable,
-          eq(votesCommentsTable.commentId, commentsTable.id)
-        )
-        .groupBy(commentsTable.id, userTable.id)
+        .leftJoin(votesCommentsTable, viewerCommentVoteCondition(auth.user.id))
         .where(eq(commentsTable.id, newComment.id))
         .limit(1)
 
@@ -454,18 +488,11 @@ const commentUpdateThreadHandler = orpcBase
       .select({
         ...commentSelect,
         author: authorSelect,
-        isVoted: sql<VoteDirectionNullable>`
-            max(case when ${votesCommentsTable.userId} = ${auth.user.id}
-            then ${votesCommentsTable.direction} end)
-          `.as('is_voted'),
+        isVoted: votesCommentsTable.direction,
       })
       .from(commentsTable)
       .innerJoin(userTable, eq(commentsTable.authorId, userTable.id))
-      .leftJoin(
-        votesCommentsTable,
-        eq(votesCommentsTable.commentId, commentsTable.id)
-      )
-      .groupBy(commentsTable.id, userTable.id)
+      .leftJoin(votesCommentsTable, viewerCommentVoteCondition(auth.user.id))
       .where(eq(commentsTable.id, id))
       .limit(1)
 
@@ -514,18 +541,11 @@ const commentDeleteHandler = orpcBase
       .select({
         ...commentSelect,
         author: authorSelect,
-        isVoted: sql<VoteDirectionNullable>`
-            max(case when ${votesCommentsTable.userId} = ${auth.user.id}
-            then ${votesCommentsTable.direction} end)
-          `.as('is_voted'),
+        isVoted: votesCommentsTable.direction,
       })
       .from(commentsTable)
       .innerJoin(userTable, eq(commentsTable.authorId, userTable.id))
-      .leftJoin(
-        votesCommentsTable,
-        eq(votesCommentsTable.commentId, commentsTable.id)
-      )
-      .groupBy(commentsTable.id, userTable.id)
+      .leftJoin(votesCommentsTable, viewerCommentVoteCondition(auth.user.id))
       .where(eq(commentsTable.id, input.id))
       .limit(1)
 
@@ -551,6 +571,7 @@ const voteCommentThreadHandler = orpcBase
       const [comment] = await tx
         .select({
           id: commentsTable.id,
+          deletedAt: commentsTable.deletedAt,
         })
         .from(commentsTable)
         .where(eq(commentsTable.id, id))
@@ -559,6 +580,12 @@ const voteCommentThreadHandler = orpcBase
 
       if (!comment) {
         throw errors.NOT_FOUND({ message: 'Comment not found' })
+      }
+
+      if (comment.deletedAt) {
+        throw errors.CONFLICT({
+          message: 'Cannot vote on a deleted comment',
+        })
       }
 
       const [existingVote] = await tx
@@ -635,8 +662,8 @@ const voteCommentThreadHandler = orpcBase
 
       return {
         action,
-        userVote: resultDirection,
-        newPoints: updateComment.points,
+        points: updateComment.points,
+        isVoted: resultDirection,
       }
     })
 

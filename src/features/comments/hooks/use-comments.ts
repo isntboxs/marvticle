@@ -1,4 +1,5 @@
 import {
+  useInfiniteQuery,
   useMutation,
   useQueryClient,
   useSuspenseInfiniteQuery,
@@ -6,44 +7,35 @@ import {
 
 import { toast } from 'sonner'
 
+import {
+  commentRepliesInfiniteQueryOptions,
+  threadCommentsInfiniteQueryOptions,
+} from '#/features/comments/query-options'
+import { threadDetailQueryOptions } from '#/features/threads/query-options'
 import { orpc } from '#/orpc/client'
 
-export const threadCommentsInfiniteQueryOptions = ({
-  threadSlug,
-  limit,
-}: {
-  threadSlug: string
-  limit?: number
-}) =>
-  orpc.comments.getByThread.infiniteOptions({
-    input: (pageParam: string | null) => ({
-      limit,
-      threadSlug,
-      cursor: typeof pageParam === 'string' ? pageParam : undefined,
-    }),
-    initialPageParam: null,
-    getNextPageParam: (lastPage) => lastPage.nextCursor,
-  })
+export {
+  commentRepliesInfiniteQueryOptions,
+  threadCommentsInfiniteQueryOptions,
+}
 
-export const commentRepliesInfiniteQueryOptions = ({
-  parentId,
-  limit,
-  enabled = true,
-}: {
-  parentId: string
-  limit?: number
-  enabled?: boolean
-}) =>
-  orpc.comments.getReplies.infiniteOptions({
-    input: (pageParam: string | null) => ({
-      limit,
-      parentId,
-      cursor: typeof pageParam === 'string' ? pageParam : undefined,
-    }),
-    initialPageParam: null,
-    getNextPageParam: (lastPage) => lastPage.nextCursor,
-    enabled,
+const threadCommentsKey = (threadSlug: string) =>
+  orpc.comments.list.key({ type: 'infinite', input: { threadSlug } })
+
+const commentRepliesKey = (parentId: string) =>
+  orpc.comments.listReplies.key({ type: 'infinite', input: { parentId } })
+
+const invalidateThreadCommentQueries = (
+  queryClient: ReturnType<typeof useQueryClient>,
+  threadSlug: string
+) => {
+  void queryClient.invalidateQueries({
+    queryKey: threadCommentsKey(threadSlug),
   })
+  void queryClient.invalidateQueries({
+    queryKey: threadDetailQueryOptions({ slug: threadSlug }).queryKey,
+  })
+}
 
 export const useThreadCommentsInfiniteQuery = ({
   threadSlug,
@@ -70,11 +62,11 @@ export const useCommentRepliesInfiniteQuery = ({
   parentId: string
   enabled?: boolean
 }) => {
-  const query = useSuspenseInfiniteQuery(
+  const query = useInfiniteQuery(
     commentRepliesInfiniteQueryOptions({ parentId, enabled })
   )
-  const replies = query.data.pages.flatMap((page) => page.items)
-  const totalCount = query.data.pages.at(-1)?.totalCount ?? 0
+  const replies = query.data?.pages.flatMap((page) => page.items) ?? []
+  const totalCount = query.data?.pages.at(-1)?.totalCount ?? 0
 
   return {
     ...query,
@@ -87,17 +79,13 @@ export const useCreateCommentMutation = () => {
   const queryClient = useQueryClient()
 
   return useMutation(
-    orpc.comments.createRoot.mutationOptions({
+    orpc.comments.create.mutationOptions({
       onSuccess: (_comment, variables) => {
         toast.success('Comment created', {
           description: 'Your comment has been posted.',
         })
 
-        void queryClient.invalidateQueries({
-          queryKey: threadCommentsInfiniteQueryOptions({
-            threadSlug: variables.threadSlug,
-          }).queryKey,
-        })
+        invalidateThreadCommentQueries(queryClient, variables.threadSlug)
       },
 
       onError: (error) => {
@@ -117,22 +105,15 @@ export const useCreateReplyMutation = ({
   const queryClient = useQueryClient()
 
   return useMutation(
-    orpc.comments.createReply.mutationOptions({
+    orpc.comments.reply.mutationOptions({
       onSuccess: (_reply, variables) => {
         toast.success('Reply created', {
           description: 'Your reply has been posted.',
         })
 
+        invalidateThreadCommentQueries(queryClient, threadSlug)
         void queryClient.invalidateQueries({
-          queryKey: threadCommentsInfiniteQueryOptions({
-            threadSlug,
-          }).queryKey,
-        })
-
-        void queryClient.invalidateQueries({
-          queryKey: commentRepliesInfiniteQueryOptions({
-            parentId: variables.parentId,
-          }).queryKey,
+          queryKey: commentRepliesKey(variables.parentId),
         })
       },
 
@@ -159,10 +140,9 @@ export const useUpdateCommentMutation = ({
           description: 'Your comment has been updated.',
         })
 
+        invalidateThreadCommentQueries(queryClient, threadSlug)
         void queryClient.invalidateQueries({
-          queryKey: threadCommentsInfiniteQueryOptions({
-            threadSlug,
-          }).queryKey,
+          queryKey: orpc.comments.listReplies.key({ type: 'infinite' }),
         })
       },
 
@@ -189,10 +169,9 @@ export const useDeleteCommentMutation = ({
           description: 'Your comment has been deleted.',
         })
 
+        invalidateThreadCommentQueries(queryClient, threadSlug)
         void queryClient.invalidateQueries({
-          queryKey: threadCommentsInfiniteQueryOptions({
-            threadSlug,
-          }).queryKey,
+          queryKey: orpc.comments.listReplies.key({ type: 'infinite' }),
         })
       },
 

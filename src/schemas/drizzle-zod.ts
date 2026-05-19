@@ -42,6 +42,11 @@ export const latestCursorSchema = z.object({
   id: z.uuid(),
   createdAt: z.coerce.date(),
 })
+export const oldestCursorSchema = z.object({
+  mode: z.literal('oldest'),
+  id: z.uuid(),
+  createdAt: z.coerce.date(),
+})
 export const topCursorSchema = z.object({
   mode: z.literal('top'),
   id: z.uuid(),
@@ -55,6 +60,7 @@ export const discoverCursorSchema = z.object({
 
 export const cursorPayloadSchema = z.discriminatedUnion('mode', [
   latestCursorSchema,
+  oldestCursorSchema,
   topCursorSchema,
   discoverCursorSchema,
 ])

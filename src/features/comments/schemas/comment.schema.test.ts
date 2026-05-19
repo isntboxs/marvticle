@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
+import { COMMENT_CONTENT_MAX_LENGTH } from '#/configs'
 import {
-  COMMENT_CONTENT_MAX_LENGTH,
-  commentCreateSchema,
+  commentCreateReplySchema,
+  commentCreateRootSchema,
   commentContentSchema,
 } from '#/features/comments/schemas/comment.schema'
 
-const threadId = '11111111-1111-4111-8111-111111111111'
+const threadSlug = 'root-thread'
 const parentId = '22222222-2222-4222-8222-222222222222'
 
 describe('comment schemas', () => {
@@ -23,8 +24,8 @@ describe('comment schemas', () => {
 
   it('accepts create input without a parent comment', () => {
     expect(
-      commentCreateSchema.safeParse({
-        threadId,
+      commentCreateRootSchema.safeParse({
+        threadSlug,
         content: 'Root comment',
       }).success
     ).toBe(true)
@@ -32,8 +33,7 @@ describe('comment schemas', () => {
 
   it('accepts create input with a parent comment', () => {
     expect(
-      commentCreateSchema.safeParse({
-        threadId,
+      commentCreateReplySchema.safeParse({
         parentId,
         content: 'Reply comment',
       }).success

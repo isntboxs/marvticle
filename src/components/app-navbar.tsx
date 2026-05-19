@@ -2,8 +2,7 @@ import { Link, useRouteContext, useRouter } from '@tanstack/react-router'
 
 import { LogOutIcon, Settings2Icon, UserIcon } from 'lucide-react'
 import { toast } from 'sonner'
-import type { auth } from '#/lib/auth/server'
-import { UserAvatar } from '#/components/user-avatar'
+
 import { Button } from '#/components/ui/button'
 import {
   DropdownMenu,
@@ -13,7 +12,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '#/components/ui/dropdown-menu'
+import { UserAvatar } from '#/components/user-avatar'
 import { authClient } from '#/lib/auth/client'
+import type { auth } from '#/lib/auth/server'
 
 export const AppNavbar = () => {
   const { auth } = useRouteContext({ from: '__root__' })
@@ -61,7 +62,7 @@ export const AppNavbar = () => {
           {!!auth && (
             <>
               <Button asChild variant="default" size="lg">
-                <Link to="/new" viewTransition>
+                <Link to="/threads/new" viewTransition>
                   Create post
                 </Link>
               </Button>

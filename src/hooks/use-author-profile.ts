@@ -1,7 +1,7 @@
 import { orpc } from '#/orpc/client'
 
 export const authorProfileQueryOptions = (username: string) =>
-  orpc.users.getAuthorByUsername.queryOptions({
+  orpc.users.getUserByUsername.queryOptions({
     input: {
       username,
     },
