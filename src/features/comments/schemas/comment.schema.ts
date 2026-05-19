@@ -124,7 +124,9 @@ export const createCommentThreadInputSchema = createInsertSchema(
     content: true,
   })
   .extend({
-    threadSlug: z.string(),
+    threadSlug: z
+      .string()
+      .min(DEFAULT_MIN, { error: 'Thread slug is required' }),
     content: commentContentSchema,
   })
 

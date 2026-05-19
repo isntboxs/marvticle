@@ -1,5 +1,6 @@
 import { z } from 'zod'
 
+import { DEFAULT_MIN } from '#/configs'
 import { threadsTable } from '#/db/schemas/threads'
 import { userSelectSchema } from '#/features/users/schemas/users.schema'
 import {
@@ -15,6 +16,8 @@ import {
   voteDirectionNullableSchema,
 } from '#/schemas/drizzle-zod'
 
+const slugSchema = z.string().min(DEFAULT_MIN, { message: 'Slug is required' })
+
 export const threadOutputSchema = createSelectSchema(threadsTable)
   .pick({
     id: true,
@@ -27,6 +30,7 @@ export const threadOutputSchema = createSelectSchema(threadsTable)
     updatedAt: true,
   })
   .extend({
+    slug: slugSchema,
     points: pointsSchema,
     commentsCount: commentsCountSchema,
     author: userSelectSchema.pick({

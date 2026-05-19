@@ -46,10 +46,8 @@ export const BlockNoteViewBlocks = ({ content }: BlockNoteViewProps) => {
       const blocks = await editor.tryParseMarkdownToBlocks(content)
       editor.replaceBlocks(editor.document, blocks)
     }
-
     void loadInitialContent()
-    // oxlint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [content, editor])
 
   return (
     <BlockNoteView

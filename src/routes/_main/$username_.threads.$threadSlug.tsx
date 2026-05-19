@@ -3,9 +3,19 @@ import { createFileRoute } from '@tanstack/react-router'
 import { MarkdownRenderer } from '#/components/markdown-renderer'
 import { Separator } from '#/components/ui/separator'
 import { CommentsThread } from '#/features/comments/components/comments-thread'
-import { useThreadDetailQuery } from '#/features/threads/hooks/use-threads'
+import {
+  threadDetailQueryOptions,
+  useThreadDetailQuery,
+} from '#/features/threads/hooks/use-threads'
 
 export const Route = createFileRoute('/_main/$username_/threads/$threadSlug')({
+  beforeLoad: async ({ context, params }) => {
+    const thread = await context.queryClient.ensureQueryData(
+      threadDetailQueryOptions({ slug: params.threadSlug })
+    )
+
+    return { thread }
+  },
   component: RouteComponent,
 })
 

@@ -58,7 +58,7 @@ const CommentsThreadTreeNode: FC<CommentsThreadTreeNodeProps> = ({
   })
 
   const isAuthor = comment.author.id === threadAuthorId
-  const repliesCount = isExpanded ? totalCount : comment.commentsCount
+  const repliesCount = Math.max(comment.commentsCount, totalCount)
   const relativeTime = (date: Date) => formatDistanceToNowStrict(date)
 
   const handleReply = () => {
@@ -124,7 +124,11 @@ const CommentsThreadTreeNode: FC<CommentsThreadTreeNodeProps> = ({
       </div>
 
       <div className="space-y-2">
-        <MarkdownRenderer content={comment.content} />
+        {comment.isDeleted ? (
+          <p className="text-sm text-muted-foreground italic">[deleted]</p>
+        ) : (
+          <MarkdownRenderer content={comment.content} />
+        )}
       </div>
 
       <div className="flex items-center justify-between">
@@ -142,7 +146,7 @@ const CommentsThreadTreeNode: FC<CommentsThreadTreeNodeProps> = ({
           )}
         </div>
 
-        {repliesCount > 0 && (
+        {(repliesCount > 0 || isExpanded) && (
           <Button
             type="button"
             variant="ghost"
